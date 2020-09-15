@@ -1,3 +1,5 @@
+#include "djikstra.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -33,62 +35,6 @@ int main (void)
   socklen_t addr_len;
   char s[INET6_ADDRSTRLEN];
 
-  /*START: parsing the map file*/
-  int *adjmat;
-  int num_maps = 0, map_cursor = 0;
-  int num_vertices = 0, num_edges = 0;
-  char seen_vertices = 0;
-  int v1 = 0, v2 = 0, c;
-  FILE *fin = fopen("map.txt", "r");
-  while (fgets(buf, bufSize, fin)) {
-    if ( isalpha(buf[0]) ) {
-      ++num_maps;
-    }
-  }
-  printf("The Server A has constructed a list of %d maps:\n", num_maps);
-  for (int i = 0; i < 30; ++i) { printf( (i != 29) ? "-" : "-\n" ); }
-  printf("MapID  NumVertices  NumEdges\n");
-  for (int i = 0; i < 30; ++i) { printf( (i != 29) ? "-" : "-\n" ); }
-  rewind(fin);
-  while (fgets(buf, bufSize, fin)) {
-    if ( isalpha(buf[0]) ) { map_cursor = 0; }
-    switch (map_cursor) {
-    case 0:
-      printf("%-7s", buf); // mapid + 6whitespaces
-      ++map_cursor;
-      break;
-    case 1:
-      ++map_cursor;
-      break;
-    case 2:
-      ++map_cursor;
-      break;
-    default:
-      /*TODO: YOU ARE MISSING THE CASE WHERE V1/V2 = 0*/
-      sscanf(buf, "%d %d %*d", &v1, &v2);
-      seen_vertices ^= (1 << v1);
-      seen_vertices ^= (1 << v2);
-      num_vertices += ( (seen_vertices >> v1) & 1 ) ? 0 : 1;
-      num_vertices += ( (seen_vertices >> v2) & 1 ) ? 0 : 1;
-      ++num_edges;
-      break;
-    }
-    /*START: mimic peek()*/
-    c = fgetc(fin);
-    if ( isalpha(c) ) {
-      sprintf(buf, "%d", num_vertices);
-      printf("%-7s", buf);
-      memset(buf, 0, bufSize * sizeof(*buf));
-      sprintf(buf, "%d", num_edges);
-      printf("%-7s\n", buf);
-      memset(buf, 0, bufSize * sizeof(*buf));
-    }
-    ungetc(c, fin);
-    /*END: mimic peek()*/
-  }
-  fclose(fin);
-  /*END: parsing the map file*/
-
   /*START: set up ServerA Socket*/
   memset(&hints, 0, sizeof hints);
   hints.ai_family = AF_UNSPEC; // set AF_INET to force IPv4
@@ -119,7 +65,81 @@ int main (void)
   /*END: set up ServerA Socket*/
   printf("The ServerA is up and running using UDP on port %s.\n", SRVRAPORT);
 
-  /*START: receiveing and sending udp packets*/
+
+
+  /*START: parsing the map file*/
+  int num_maps = 0, map_cursor = 0;
+  char seen_vertices = 0;
+  int v1 = 0, v2 = 0, c;
+  FILE *fin;
+  if ( (fin = fopen("map.txt", "r")) == NULL ) {
+    perror("Failed to open map.txt");
+    exit(1);
+  }
+  while (fgets(buf, bufSize, fin)) {
+    if ( isalpha(buf[0]) ) {
+      ++num_maps;
+    }
+  }
+  printf("The Server A has constructed a list of %d maps:\n", num_maps);
+  int *num_vertices = (int *)calloc(num_maps, sizeof(*num_vertices));
+  int *num_edges =  (int *)calloc(num_maps, sizeof(*num_vertices));
+  int map_i = -1;
+
+
+  for (int i = 0; i < 30; ++i) { printf( (i != 29) ? "-" : "-\n" ); }
+  printf("MapID  NumVertices  NumEdges\n");
+  for (int i = 0; i < 30; ++i) { printf( (i != 29) ? "-" : "-\n" ); }
+  rewind(fin);
+  while (fgets(buf, bufSize, fin)) {
+    switch (map_cursor) {
+    case 0:
+      ++map_i;
+      printf("%-7c", buf[0]); // mapid + 6whitespaces
+      ++map_cursor;
+      break;
+    case 1:
+      ++map_cursor;
+      break;
+    case 2:
+      ++map_cursor;
+      break;
+    default:
+      sscanf(buf, "%d %d %*d", &v1, &v2);
+      if ( !((seen_vertices >> v1) & 1) ) {
+	seen_vertices ^= (1 << v1);
+	++num_vertices[map_i];
+      }
+      if ( !((seen_vertices >> v2) & 1) ) {
+	seen_vertices ^= (1 << v2);
+	++num_vertices[map_i];
+      }
+      ++num_edges[map_i];
+      break;
+    }
+    /*START: mimic peek()*/
+    c = fgetc(fin);
+    if ( isalpha(c) || feof(fin) ) {
+      sprintf(buf, "%d", num_vertices[map_i]);       // num_vertices -> str
+      printf("%-7s", buf);
+      memset(buf, 0, bufSize * sizeof(*buf)); // clear buf
+      sprintf(buf, "%d", num_edges[map_i]);          // num_edges -> str
+      printf("%-7s\n", buf);
+      memset(buf, 0, bufSize * sizeof(*buf)); // clear buf
+      map_cursor = 0;                         // Reset the cursor
+      //      num_vertices = 0;
+      //      num_edges = 0;
+      seen_vertices = 0;
+    }
+    ungetc(c, fin);
+    /*END: mimic peek()*/
+  } // end while
+  for (int i = 0; i < 30; ++i) { printf( (i != 29) ? "-" : "-\n" ); }
+  /*END: parsing the map file*/
+
+
+
+  /*START: receiveing udp packets*/
   memset(buf, 0, bufSize * sizeof(*buf));
   addr_len = sizeof awsAddr;
   numbytes = recvfrom(srvrAListeningFD, buf, bufSize * sizeof(*buf), MSG_WAITALL, (struct sockaddr *)&awsAddr, &addr_len);
@@ -131,7 +151,67 @@ int main (void)
   printf("ServerA: packet is %d bytes long\n", numbytes);
   buf[numbytes] = '\0';
   printf("ServerA: packet contains \"%s\"\n", buf);
+  char mapID;
+  int startNode;
+  sscanf(buf, "%c %d %*d", &mapID, &startNode);
+  printf("The Server A has received input for finding shortest paths: starting vertex %d of map %c.\n", startNode, mapID);
+  /*END: receiving udp packets*/
 
+  /*START: constructing the chosen graph*/
+  rewind(fin);
+  memset(buf, 0, bufSize * sizeof(*buf));
+  map_i = mapID - 65; // convert map ID to int.
+  int **adj_mat = (int **)calloc(num_vertices[map_i], sizeof(*adj_mat));
+  for (int i = 0; i < num_vertices[map_i]; ++i) {
+    adj_mat[i] = (int *)calloc(num_vertices[map_i], sizeof(*adj_mat[i]));
+  }
+  int dist = 0;
+
+  while ( fgets(buf, bufSize, fin) ) {
+    if ( buf[0] == mapID ) {
+      ++map_cursor;
+      while ( fgets(buf, bufSize, fin) ) {
+	if ( isalpha(buf[0]) ) { break; }
+	switch (map_cursor) {
+	case 0:
+	  break;
+	case 1:
+	  ++map_cursor;
+	  break;
+	case 2:
+	  ++map_cursor;
+	  break;
+	default:
+	  sscanf(buf, "%d %d %d", &v1, &v2, &dist);
+	  adj_mat[v1][v2] = dist;
+	  adj_mat[v2][v1] = dist;
+	  break;
+	} // end switch
+      } // end while
+      break;
+    } //end if
+  } // end while
+
+
+  fclose(fin);
+  /*END: constructing the chosen graph*/
+
+  for (int i = 0; i < num_vertices[map_i]; ++i) {
+    for (int j = 0; j < num_vertices[map_i]; ++j) {
+      printf( (j==num_vertices[map_i]-1) ? "%-3d\n" : "%-3d ", adj_mat[i][j]);
+    }
+  }
+  printf("\n");
+
+  /*START: Perform djikstra's alg*/
+  int *distances = calloc(num_vertices[map_i], sizeof(*distances));
+  distances = djikstra_Ov2(adj_mat, num_vertices[map_i], startNode);
+  for (int i = 0; i < num_vertices[map_i]; ++i) {
+    printf( (i != num_vertices[map_i]-1) ? "%d " : "%d\n", distances[i] );
+  }
+  /*END: Perform djikstra's alg*/
+
+  /*START: sending udp packets*/
   memset(buf, 0, bufSize * sizeof(*buf));
   sprintf(buf, "ACK the message from AWS->ServerA");
   numbytes = sendto(srvrAListeningFD, buf, strlen(buf), 0, (struct sockaddr *)&awsAddr, addr_len);
@@ -139,7 +219,7 @@ int main (void)
     perror("talker: sendto");
     exit(1);
   }
-  /*END: receiveing and sending udp packets*/
+  /*END: sending udp packets*/
 
   close(srvrAListeningFD);
 

@@ -271,7 +271,7 @@ int main (int argc, char **argv)
 	exit(1);
       }
       printf("aws: got packet from %s\n", inet_ntop(srvrAPtr->ai_family, get_in_addr(srvrAPtr->ai_addr), srvrAIPAddr, sizeof srvrAIPAddr));
-      printf("aws: packet is %d bytes long = %s\n", numRecvBytes, awsBuf);
+      printf("aws: packet is %d bytes long and contains %s\n", numRecvBytes, awsBuf);
       awsBuf[numRecvBytes] = '\0';
       state = (numRecvBytes != -1 ? AWSTOSRVRB : state);
       /*END: AWS-> ServerA*/

@@ -196,29 +196,40 @@ int main (void)
   fclose(fin);
   /*END: constructing the chosen graph*/
 
+  /*START: Printing the adjacency matrix
   for (int i = 0; i < num_vertices[map_i]; ++i) {
     for (int j = 0; j < num_vertices[map_i]; ++j) {
       printf( (j==num_vertices[map_i]-1) ? "%-3d\n" : "%-3d ", adj_mat[i][j]);
     }
   }
   printf("\n");
+  END: Printing the adjacency matrix*/
 
   /*START: Perform djikstra's alg*/
   int *distances = calloc(num_vertices[map_i], sizeof(*distances));
   distances = djikstra_Ov2(adj_mat, num_vertices[map_i], startNode);
+  printf("The Server A has identified the following shortest paths:\n");
+  for (int i = 0; i < 30; ++i) { printf( (i != 29) ? "-" : "-\n" ); }
+  printf("Destination MinLength\n");
+  for (int i = 0; i < 30; ++i) { printf( (i != 29) ? "-" : "-\n" ); }
   for (int i = 0; i < num_vertices[map_i]; ++i) {
-    printf( (i != num_vertices[map_i]-1) ? "%d " : "%d\n", distances[i] );
+    printf( "%-11d %d\n", i, distances[i] );
   }
+  for (int i = 0; i < 30; ++i) { printf( (i != 29) ? "-" : "-\n" ); }
   /*END: Perform djikstra's alg*/
 
   /*START: sending udp packets*/
   memset(buf, 0, bufSize * sizeof(*buf));
-  sprintf(buf, "ACK the message from AWS->ServerA");
+  for (int i = 0; i < num_vertices[map_i]; ++i) {
+    // You'd have to create a new (FILE *) but fmemopen(3) would append these strings w/o recalc'ing strlen.
+    sprintf( buf + strlen(buf), (i != num_vertices[map_i]-1) ? "%-11d %d\n" : "%-11d %d", i, distances[i] );
+  }
   numbytes = sendto(srvrAListeningFD, buf, strlen(buf), 0, (struct sockaddr *)&awsAddr, addr_len);
   if (numbytes == -1) {
     perror("talker: sendto");
     exit(1);
   }
+  printf("The Server A has sent shortest paths to AWS.\n");
   /*END: sending udp packets*/
 
   close(srvrAListeningFD);

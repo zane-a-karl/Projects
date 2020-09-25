@@ -201,6 +201,7 @@ int main (int argc, char **argv)
   printf("The AWS is up and running");
   printf("...waiting for connections...\n");
   int state = CTOAWS;
+  int *distances;
 
   while (1) { // main accept() loop
 
@@ -271,7 +272,26 @@ int main (int argc, char **argv)
 	exit(1);
       }
       printf("aws: got packet from %s\n", inet_ntop(srvrAPtr->ai_family, get_in_addr(srvrAPtr->ai_addr), srvrAIPAddr, sizeof srvrAIPAddr));
-      printf("aws: packet is %d bytes long and contains %s\n", numRecvBytes, awsBuf);
+      printf("aws: packet is %d bytes long\n", numRecvBytes);
+      for (int i = 0; i < 30; ++i) { printf( (i != 29) ? "-" : "-\n" ); }
+      printf("Destination MinLength\n");
+      for (int i = 0; i < 30; ++i) { printf( (i != 29) ? "-" : "-\n" ); }
+      printf("%s\n", awsBuf);
+      for (int i = 0; i < 30; ++i) { printf( (i != 29) ? "-" : "-\n" ); }
+
+      /*START: parse awsBuf into distances array*/
+      int num_distances = 1; // The last line has no '\n'
+      for ( i = 0; i < strlen(awsBuf); ++i) {
+	if (awsBuf[i] == '\n') {
+	  ++num_distances;
+	}
+      }
+      distances = (int *)calloc(num_distances, sizeof(*distances));
+      while ( sscanf(awsBuf, "%-11d %d", i, distances[i]) != EOF ) {
+	++i;
+      }
+      /*END: parse awsBuf into distances array*/
+      
       awsBuf[numRecvBytes] = '\0';
       state = (numRecvBytes != -1 ? AWSTOSRVRB : state);
       /*END: AWS-> ServerA*/
@@ -287,7 +307,7 @@ int main (int argc, char **argv)
 	perror("srvrB socket type is not IPv4 or IPv6\n");
 	exit(1);
       }
-      sprintf(awsBuf, "Hello ServerB! This is the AWS Server\n");
+      sprintf(awsBuf, "Hello ServerB! This is the AWS Server.\n");
       numSendBytes = sendto(awsUdpFD, awsBuf, awsBufSize * sizeof(*awsBuf), 0, srvrBPtr->ai_addr, srvrBPtr->ai_addrlen);
       if (numSendBytes == -1) {
 	perror("srvrB sendto failed");

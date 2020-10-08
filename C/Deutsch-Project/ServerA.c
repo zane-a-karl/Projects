@@ -85,23 +85,27 @@ int main (void)
   int *num_vertices = (int *)calloc(num_maps, sizeof(*num_vertices));
   int *num_edges =  (int *)calloc(num_maps, sizeof(*num_vertices));
   int map_i = -1;
+  int *propagation_speed = (int *)calloc(num_maps, sizeof(*propagation_speed));
+  int *transmission_speed = (int *)calloc(num_maps, sizeof(*transmission_speed));
 
 
-  for (int i = 0; i < 30; ++i) { printf( (i != 29) ? "-" : "-\n" ); }
-  printf("MapID  NumVertices  NumEdges\n");
-  for (int i = 0; i < 30; ++i) { printf( (i != 29) ? "-" : "-\n" ); }
+  for (int i = 0; i < 34; ++i) { printf( (i != 33) ? "-" : "-\n" ); }
+  printf("MapID     NumVertices     NumEdges\n");
+  for (int i = 0; i < 34; ++i) { printf( (i != 33) ? "-" : "-\n" ); }
   rewind(fin);
   while (fgets(buf, bufSize, fin)) {
     switch (map_cursor) {
     case 0:
       ++map_i;
-      printf("%-7c", buf[0]); // mapid + 6whitespaces
+      printf("%-10c", buf[0]); // mapid + 6whitespaces
       ++map_cursor;
       break;
     case 1:
+      sscanf(buf, "%d", propagation_speed + map_i);
       ++map_cursor;
       break;
     case 2:
+      sscanf(buf, "%d", transmission_speed + map_i);      
       ++map_cursor;
       break;
     default:
@@ -121,10 +125,10 @@ int main (void)
     c = fgetc(fin);
     if ( isalpha(c) || feof(fin) ) {
       sprintf(buf, "%d", num_vertices[map_i]);       // num_vertices -> str
-      printf("%-7s", buf);
+      printf("%-16s", buf);
       memset(buf, 0, bufSize * sizeof(*buf)); // clear buf
       sprintf(buf, "%d", num_edges[map_i]);          // num_edges -> str
-      printf("%-7s\n", buf);
+      printf("%-13s\n", buf);
       memset(buf, 0, bufSize * sizeof(*buf)); // clear buf
       map_cursor = 0;                         // Reset the cursor
       //      num_vertices = 0;
@@ -134,7 +138,7 @@ int main (void)
     ungetc(c, fin);
     /*END: mimic peek()*/
   } // end while
-  for (int i = 0; i < 30; ++i) { printf( (i != 29) ? "-" : "-\n" ); }
+  for (int i = 0; i < 34; ++i) { printf( (i != 33) ? "-" : "-\n" ); }
   /*END: parsing the map file*/
 
 
@@ -209,20 +213,28 @@ int main (void)
   int *distances = calloc(num_vertices[map_i], sizeof(*distances));
   distances = djikstra_Ov2(adj_mat, num_vertices[map_i], startNode);
   printf("The Server A has identified the following shortest paths:\n");
-  for (int i = 0; i < 30; ++i) { printf( (i != 29) ? "-" : "-\n" ); }
-  printf("Destination MinLength\n");
-  for (int i = 0; i < 30; ++i) { printf( (i != 29) ? "-" : "-\n" ); }
+  for (int i = 0; i < 25; ++i) { printf( (i != 24) ? "-" : "-\n" ); }
+  printf("Destination     MinLength\n");
+  for (int i = 0; i < 25; ++i) { printf( (i != 24) ? "-" : "-\n" ); }
   for (int i = 0; i < num_vertices[map_i]; ++i) {
-    printf( "%-11d %d\n", i, distances[i] );
+    printf( "%-15d %d\n", i, distances[i] );
   }
-  for (int i = 0; i < 30; ++i) { printf( (i != 29) ? "-" : "-\n" ); }
+  for (int i = 0; i < 25; ++i) { printf( (i != 24) ? "-" : "-\n" ); }
   /*END: Perform djikstra's alg*/
 
   /*START: sending udp packets*/
   memset(buf, 0, bufSize * sizeof(*buf));
+  sprintf( buf, "%d %d", propagation_speed[map_i], transmission_speed[map_i]);
+  numbytes = sendto(srvrAListeningFD, buf, strlen(buf), 0, (struct sockaddr *)&awsAddr, addr_len);
+  if (numbytes == -1) {
+    perror("talker: sendto");
+    exit(1);
+  }
+
+  memset(buf, 0, bufSize * sizeof(*buf));
   for (int i = 0; i < num_vertices[map_i]; ++i) {
     // You'd have to create a new (FILE *) but fmemopen(3) would append these strings w/o recalc'ing strlen.
-    sprintf( buf + strlen(buf), (i != num_vertices[map_i]-1) ? "%-11d %d\n" : "%-11d %d", i, distances[i] );
+    sprintf( buf + strlen(buf), (i != num_vertices[map_i]-1) ? "%-15d %d\n" : "%-15d %d", i, distances[i] );
   }
   numbytes = sendto(srvrAListeningFD, buf, strlen(buf), 0, (struct sockaddr *)&awsAddr, addr_len);
   if (numbytes == -1) {

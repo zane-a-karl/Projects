@@ -88,16 +88,67 @@ int main (int argc, char *argv[])
   printf("start vertex %s; map %s; file size %s.\n", argv[2], argv[1], argv[3]);
   free(msgToAWS);
 
-  int clientBufSize = 1024;
+  int clientBufSize = 2048;
   char *clientBuf = (char *)calloc(clientBufSize, sizeof(*clientBuf));
   int numRecvBytes;
+
+  /*START: Receive the Distances*/
   if ( ( numRecvBytes = recv(sockfd, clientBuf, clientBufSize, 0) ) == -1) {
     perror("Error: receiving initial Client Data\n");
     close(sockfd);
     exit(0);
   }
   clientBuf[numRecvBytes] = '\0';
-  printf("%s\n", clientBuf);
+  int num_distances = 1; // The last line has no '\n'
+  for ( int i = 0; i < strlen(clientBuf); ++i ) {
+    if (clientBuf[i] == ' ') { ++num_distances; }
+  }
+
+  int *whitespace_locs = (int *)calloc( num_distances, sizeof(*whitespace_locs) );
+  int wl_i = 0;
+  for ( int i = 0; i < strlen(clientBuf); ++i ) {
+    if (clientBuf[i] == ' ') { whitespace_locs[++wl_i] = i; } // pre-fix increment to account for string structure.
+  }
+  int *distances = (int *)calloc(num_distances, sizeof(*distances));
+  for ( int i = 0;  i != num_distances; ++i ) {
+    sscanf(clientBuf + ( i == 0 ? i : whitespace_locs[i] ), "%d ", distances + i);
+  }
+  /*END: Receive the Distances*/
+
+  /*START: Receive the Delays*/
+  memset(clientBuf, 0, clientBufSize * sizeof(*clientBuf));
+  if ( ( numRecvBytes = recv(sockfd, clientBuf, clientBufSize, 0) ) == -1) {
+    perror("Error: receiving initial Client Data\n");
+    close(sockfd);
+    exit(0);
+  }
+  clientBuf[numRecvBytes] = '\0';
+
+  double *total_delays = (double *)calloc( num_distances, sizeof(*total_delays) );
+  double *propagation_delays = (double *)calloc( num_distances, sizeof(*propagation_delays) );
+  double *transmission_delays = (double *)calloc( num_distances, sizeof(*transmission_delays) );
+  int *newline_locs = (int *)calloc( num_distances, sizeof(*newline_locs) );
+  int nl_i = 0;
+  for ( int i = 0; i < strlen(clientBuf); ++i ) {
+    if (clientBuf[i] == '\n') { newline_locs[++nl_i] = i; } // pre-fix increment to account for string structure.
+  }
+  for ( int i = 0;  i != num_distances; ++i ) {
+    sscanf(clientBuf + (i == 0 ? i : newline_locs[i] ),
+	   "%lf %lf %lf",
+	   transmission_delays + i,
+	   propagation_delays + i,
+	   total_delays + i );
+  }
+  /*END: Receive the Delays*/  
+  
+  printf("The client has received results from AWS:\n");
+  for (int i = 0; i < 67; ++i) { printf( (i != 66) ? "-" : "-\n" ); }
+  printf("Destination     MinLength     TransDelay     PropDelay     TotDelay\n");
+  for (int i = 0; i < 67; ++i) { printf( (i != 66) ? "-" : "-\n" ); }
+  for (int i = 0; i < num_distances; ++i) {
+    printf( "%-15d %-13d %-14.3f %-13.3f %-16.3f\n", i, distances[i], transmission_delays[i], propagation_delays[i], total_delays[i]);
+  }
+  for (int i = 0; i < 67; ++i) { printf( (i != 66) ? "-" : "-\n" ); }
 
   
   close(sockfd);

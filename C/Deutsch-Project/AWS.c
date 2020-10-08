@@ -201,7 +201,6 @@ int main (int argc, char **argv)
   printf("The AWS is up and running");
   printf("...waiting for connections...\n");
   int state = CTOAWS;
-  int *distances;
 
   while (1) { // main accept() loop
 
@@ -235,12 +234,6 @@ int main (int argc, char **argv)
 	awsBuf[numRecvBytes] = '\0';
 	sscanf(awsBuf, "%c %d %d", &mapID, &startNode, &fileSize);
 	printf("The AWS has received map ID %c, start vertex %d and file size %d from the client using TCP over port %d\n", mapID, startNode, fileSize, clntPort);
-	numSendBytes = send(clientFD, "ACK: message received!\n", 256, 0);
-	if (numSendBytes == -1) {
-	  perror("Failed to send ACK to client!\n");
-	  close(clientFD);
-	  exit(0);
-	}
 
       } // if !fork
       state = (numSendBytes != -1 ? AWSTOSRVRA : state);
@@ -264,34 +257,50 @@ int main (int argc, char **argv)
 	exit(1);
       }
       printf("The AWS has sent map ID=%c and starting vertex=%d to server A; server A using UDP over port %d\n", mapID, startNode, srvrAPort);
-
+      // Recv propagation and transmission speeds.
+      int propagation_speed = 0;
+      int transmission_speed = 0;
       memset(awsBuf, 0, awsBufSize * sizeof(*awsBuf));
       numRecvBytes = recvfrom(awsUdpFD, awsBuf, awsBufSize * sizeof(*awsBuf), MSG_WAITALL, srvrAPtr->ai_addr, &srvrAPtr->ai_addrlen);
       if (numRecvBytes == -1) {
 	perror("srvrA recvfrom failed");
 	exit(1);
       }
-      printf("aws: got packet from %s\n", inet_ntop(srvrAPtr->ai_family, get_in_addr(srvrAPtr->ai_addr), srvrAIPAddr, sizeof srvrAIPAddr));
+      sscanf(awsBuf, "%d %d", &propagation_speed, &transmission_speed);
+      printf("The p_speed(km/s) = %d, the t_speed(B/s) = %d\n", propagation_speed, transmission_speed);
+      // Recv shortest path calculation.
+      memset(awsBuf, 0, awsBufSize * sizeof(*awsBuf));
+      numRecvBytes = recvfrom(awsUdpFD, awsBuf, awsBufSize * sizeof(*awsBuf), MSG_WAITALL, srvrAPtr->ai_addr, &srvrAPtr->ai_addrlen);
+      if (numRecvBytes == -1) {
+	perror("srvrA recvfrom failed");
+	exit(1);
+      }
+
       printf("aws: packet is %d bytes long\n", numRecvBytes);
-      for (int i = 0; i < 30; ++i) { printf( (i != 29) ? "-" : "-\n" ); }
-      printf("Destination MinLength\n");
-      for (int i = 0; i < 30; ++i) { printf( (i != 29) ? "-" : "-\n" ); }
+      printf("The AWS has received shortest path from server A:\n");
+      for (int i = 0; i < 25; ++i) { printf( (i != 24) ? "-" : "-\n" ); }
+      printf("Destination     MinLength\n");
+      for (int i = 0; i < 25; ++i) { printf( (i != 24) ? "-" : "-\n" ); }
       printf("%s\n", awsBuf);
-      for (int i = 0; i < 30; ++i) { printf( (i != 29) ? "-" : "-\n" ); }
+      for (int i = 0; i < 25; ++i) { printf( (i != 24) ? "-" : "-\n" ); }
 
       /*START: parse awsBuf into distances array*/
       int num_distances = 1; // The last line has no '\n'
-      for ( i = 0; i < strlen(awsBuf); ++i) {
-	if (awsBuf[i] == '\n') {
-	  ++num_distances;
-	}
+      for ( int i = 0; i < strlen(awsBuf); ++i ) {
+	if (awsBuf[i] == '\n') { ++num_distances; }
       }
-      distances = (int *)calloc(num_distances, sizeof(*distances));
-      while ( sscanf(awsBuf, "%-11d %d", i, distances[i]) != EOF ) {
-	++i;
+      int *newline_locs = (int *)calloc( num_distances, sizeof(*newline_locs) );
+      int nl_i = 0;
+      for ( int i = 0; i < strlen(awsBuf); ++i ) {
+	if (awsBuf[i] == '\n') { newline_locs[++nl_i] = i; } // pre-fix increment to account for string structure.
+      }
+
+      int *distances = (int *)calloc(num_distances, sizeof(*distances));
+      for ( int i = 0;  i != num_distances; ++i ) {
+	sscanf(awsBuf + ( i == 0 ? i : newline_locs[i] ), "%*d %d\n", distances + i);
       }
       /*END: parse awsBuf into distances array*/
-      
+
       awsBuf[numRecvBytes] = '\0';
       state = (numRecvBytes != -1 ? AWSTOSRVRB : state);
       /*END: AWS-> ServerA*/
@@ -307,7 +316,21 @@ int main (int argc, char **argv)
 	perror("srvrB socket type is not IPv4 or IPv6\n");
 	exit(1);
       }
-      sprintf(awsBuf, "Hello ServerB! This is the AWS Server.\n");
+
+      // Send Propagation Speed, Transmission Speed, num_distances, and fileSize.
+      memset(awsBuf, 0, awsBufSize * sizeof(*awsBuf));
+      sprintf(awsBuf, "%d %d %d %d", propagation_speed, transmission_speed, num_distances, fileSize);
+      numSendBytes = sendto(awsUdpFD, awsBuf, awsBufSize * sizeof(*awsBuf), 0, srvrBPtr->ai_addr, srvrBPtr->ai_addrlen);
+      if (numSendBytes == -1) {
+	perror("srvrB sendto failed");
+	exit(1);
+      }
+
+      // Send shortest path distances.
+      memset(awsBuf, 0, awsBufSize * sizeof(*awsBuf));
+      for (int i = 0; i < num_distances; ++i) {
+	sprintf( awsBuf + strlen(awsBuf), (i != num_distances-1 ? "%d " : "%d"), distances[i] );
+      }
       numSendBytes = sendto(awsUdpFD, awsBuf, awsBufSize * sizeof(*awsBuf), 0, srvrBPtr->ai_addr, srvrBPtr->ai_addrlen);
       if (numSendBytes == -1) {
 	perror("srvrB sendto failed");
@@ -315,14 +338,34 @@ int main (int argc, char **argv)
       }
       printf("The AWS has sent path length, propagation speed and transmission speed to server B using UDP over port %d.\n", srvrBPort);
 
+      double *total_delays = (double *)calloc( num_distances, sizeof(*total_delays) );
+      double *propagation_delays = (double *)calloc( num_distances, sizeof(*propagation_delays) );
+      double *transmission_delays = (double *)calloc( num_distances, sizeof(*transmission_delays) );
       memset(awsBuf, 0, awsBufSize * sizeof(*awsBuf));
       numRecvBytes = recvfrom(awsUdpFD, awsBuf, awsBufSize * sizeof(*awsBuf), MSG_WAITALL, srvrBPtr->ai_addr, &srvrBPtr->ai_addrlen);
       if (numRecvBytes == -1) {
 	perror("srvrB recvfrom failed");
 	exit(1);
       }
-      printf("aws: got packet from %s\n", inet_ntop(srvrBPtr->ai_family, get_in_addr(srvrBPtr->ai_addr), srvrBIPAddr, sizeof srvrBIPAddr));
-      printf("aws: packet is %d bytes long = %s\n", numRecvBytes, awsBuf);
+      nl_i = 0;
+      for ( int i = 0; i < strlen(awsBuf); ++i ) {
+	if (awsBuf[i] == '\n') { newline_locs[++nl_i] = i; } // pre-fix increment to account for string structure.
+      }
+      for ( int i = 0;  i != num_distances; ++i ) {
+	sscanf(awsBuf + (i == 0 ? i : newline_locs[i] ),
+	       "%lf %lf %lf",
+	       transmission_delays + i,
+	       propagation_delays + i,
+	       total_delays + i );
+      }
+      printf("The AWS has received delays from server B:\n");
+      for (int i = 0; i < 54; ++i) { printf( (i != 53) ? "-" : "-\n" ); }
+      printf("Destination      TransDelay     PropDelay     TotDelay\n");
+      for (int i = 0; i < 54; ++i) { printf( (i != 53) ? "-" : "-\n" ); }
+      for (int i = 0; i < num_distances; ++i) {
+	printf( "%-16d %-14.3f %-13.3f %-16.3f\n", i, transmission_delays[i], propagation_delays[i], total_delays[i]);
+      }
+      for (int i = 0; i < 54; ++i) { printf( (i != 53) ? "-" : "-\n" ); }
       awsBuf[numRecvBytes] = '\0';
       state = (numRecvBytes != -1 ? AWSTOC : state);
       /*END: AWS-> ServerB*/
@@ -330,7 +373,44 @@ int main (int argc, char **argv)
 
     case AWSTOC:
       /*START: AWS-> Client*/
-      printf("Hooray we made it to the final phase!!\n");
+
+      // Send shortest path distances.
+      if ( /*!fork() &&*/ clientFD != -1 ) { // Only create child process if there was an accepted connection
+
+	memset(awsBuf, 0, awsBufSize * sizeof(*awsBuf));
+	for (int i = 0; i < num_distances; ++i) {
+	  sprintf( awsBuf + strlen(awsBuf), (i != num_distances-1 ? "%d " : "%d"), distances[i] );
+	}
+	numSendBytes = send(clientFD, awsBuf, awsBufSize * sizeof(*awsBuf), 0);
+	if (numSendBytes == -1) {
+	  perror("Failed to send shortest paths to client!\n");
+	  close(clientFD);
+	  exit(0);
+	}
+	
+      } // if !fork
+
+      // Send delays.
+      if ( /*!fork() &&*/ clientFD != -1 ) { // Only create child process if there was an accepted connection
+	
+	memset(awsBuf, 0, awsBufSize * sizeof(*awsBuf));
+	for (int i = 0; i < num_distances; ++i) {
+	  sprintf( awsBuf + strlen(awsBuf),
+		   (i != num_distances-1 ? "%.3f %.3f %.3f\n" : "%.3f %.3f %.3f"), // redundant code here
+		   transmission_delays[i],
+		   propagation_delays[i],
+		   total_delays[i] );
+	}
+	numSendBytes = send(clientFD, awsBuf, awsBufSize * sizeof(*awsBuf), 0);
+	if (numSendBytes == -1) {
+	  perror("Failed to send delays to client!\n");
+	  close(clientFD);
+	  exit(0);
+	}
+	
+      } // if !fork
+      
+      printf("The AWS has sent calculated delay to client using TCP over port = %d\n", clntPort);
       state = (numSendBytes != -1 ? ENDTRANS : state);
       /*END: AWS-> Client*/
       break;

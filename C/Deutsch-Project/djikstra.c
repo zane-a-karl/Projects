@@ -20,6 +20,7 @@ int index_of_min_unvisited (int **adj, bool *visited, int current_node, int v)
   return min_i;
 }
 
+// TODO: This seg faults when start node = 1 for map A
 int *djikstra_Ov2 (int **adj, int v, int start_node)
 {
   bool *visited = (bool *)calloc(v, sizeof(*visited));

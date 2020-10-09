@@ -38,6 +38,11 @@ int *djikstra_Ov2 (int **adj, int v, int start_node)
 	distances[j] = ( (orig > new) ? new : orig );
       }
     }
+    /*
+      The next 3 lines including the while loop are wrong
+      [1] for map A, if we don't start at '0' then it never gets visited
+      [2] for index of min unvisited we somehow have to mark nodes that we "pass" by
+     */
     visited[current_node] = 1;
     current_node = index_of_min_unvisited(adj, visited, current_node, v);
   } while ( !all_visited(visited, v) );
@@ -46,25 +51,25 @@ int *djikstra_Ov2 (int **adj, int v, int start_node)
   return distances;
 }
 
-/* A function that takes a (<type> **) as a param can take a (<type> *[<size>]) but not a (<type> [<size>][<size>])
+/* A function that takes a (<type> **) as a param can take a (<type> *[<size>]) but not a (<type> [<size>][<size>])*/
 int main ()
 {
-  int v = 0;
-  //  int a0[6] = {0,  7,  0,  9, 0, 0};
-  //  int a1[6] = {7,  0,  2, 10, 0, 0};
-  //  int a2[6] = {0,  2,  0, 15, 0, 0};
-  //  int a3[6] = {9, 10, 15,  0, 5, 7};
-  //  int a4[6] = {0,  0,  0,  5, 0, 4};
-  //  int a5[6] = {0,  0,  0,  7, 4, 0};
+  int v = 6;
+  int a0[6] = {0,  7,  0,  9, 0, 0};
+  int a1[6] = {7,  0,  2, 10, 0, 0};
+  int a2[6] = {0,  2,  0, 15, 0, 0};
+  int a3[6] = {9, 10, 15,  0, 5, 7};
+  int a4[6] = {0,  0,  0,  5, 0, 4};
+  int a5[6] = {0,  0,  0,  7, 4, 0};
   int a6[0] = {};
-  int *a[6] = {a6};//{a0, a1, a2, a3, a4, a5};
+  //int *a[6] = {a6};//{a0, a1, a2, a3, a4, a5};
+  int *a[6] = {a0, a1, a2, a3, a4, a5};
 
   int *d = (int *)calloc(v, sizeof(*d));
-  d = djikstra_Ov2(a, v, 0);
+  d = djikstra_Ov2(a, v, 1);
   for (int i = 0; i < v; ++i) {
     printf( (i != v-1) ? "%d " : "%d\n", d[i] );
   }
   free(d);
   return 0;
 }
-*/

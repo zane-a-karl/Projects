@@ -1,4 +1,4 @@
-#include "djikstra.h"
+#include "shortest-path-tree.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -209,9 +209,9 @@ int main (void)
   printf("\n");
   END: Printing the adjacency matrix*/
 
-  /*START: Perform djikstra's alg*/
+  /*START: Perform find shortest path tree alg*/
   int *distances = calloc(num_vertices[map_i], sizeof(*distances));
-  distances = djikstra_Ov2(adj_mat, num_vertices[map_i], startNode);
+  distances = find_shortest_path_tree(adj_mat, num_vertices[map_i], startNode);
   printf("The Server A has identified the following shortest paths:\n");
   for (int i = 0; i < 25; ++i) { printf( (i != 24) ? "-" : "-\n" ); }
   printf("Destination     MinLength\n");

@@ -2,3 +2,5 @@
 *.dSYM
 *.exe
 *.DS_Store
+*.lock
+*target

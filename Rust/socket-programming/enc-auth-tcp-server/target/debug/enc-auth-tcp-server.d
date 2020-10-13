@@ -1,0 +1,1 @@
+/Users/zanekarl/Documents/Programming/Projects/Rust/socket-programming/enc-auth-tcp-server/target/debug/enc-auth-tcp-server: /Users/zanekarl/Documents/Programming/Projects/Rust/socket-programming/enc-auth-tcp-server/src/main.rs

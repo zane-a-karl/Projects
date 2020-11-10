@@ -1,5 +1,5 @@
 [package]
-name = "enc-auth-tcp-client"
+name = "zkarl"
 version = "0.1.0"
 authors = ["zane <zane.a.karl@gmail.com>"]
 edition = "2018"
@@ -8,4 +8,3 @@ edition = "2018"
 
 [dependencies]
 sodiumoxide = "0.2.6"
-hex = "0.4.2"

@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include "client-utils.h"
 
 #define CLNTPORT "4141"
 #define AWSPORT "4242" // the port client will be connecting to
@@ -15,87 +16,48 @@
 #define MAXDATASIZE 100 // max number of bytes we can get at once
 
 
-// get sockaddr, IPv4 or IPv6:
-void *get_in_addr (struct sockaddr *sa)
-{
-  if ( sa->sa_family == AF_INET ) {
-    return &( ((struct sockaddr_in*)sa)->sin_addr );
-  }
-  return &( ((struct sockaddr_in6*)sa)->sin6_addr );
-}
+int main (int argc,
+	  char *argv[]) {
 
-void checkClientProgInput (int argc)
-{
-  if (argc < 2) {
-    fprintf(stderr,"The client program takes input!\n");
-    exit(1);
-  }
-}
-
-int main (int argc, char *argv[])
-{
-  int sockfd, numbytes;
+  int clnt_sock_fd, numbytes;
+  int getaddrinfo_failed;
   char buf[MAXDATASIZE];
-  struct addrinfo hints, *servinfo, *p; int rv;
   char s[INET6_ADDRSTRLEN];
+  struct addrinfo sock_preferences;
+  struct addrinfo *possible_cnntns;
 
-  checkClientProgInput(argc);
-
-  /*START: get addrinfo*/
-  memset(&hints, 0, sizeof hints);
-  hints.ai_family = AF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
-  if ( ( rv = getaddrinfo(NULL, AWSPORT, &hints, &servinfo) ) != 0) {
-    fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+  check_number_of_args(argc);
+  set_sock_preferences(&sock_preferences);
+  getaddrinfo_failed = getaddrinfo(NULL,
+				   AWSPORT,
+				   &sock_preferences,
+				   &possible_cnntns);
+  if ( getaddrinfo_failed ) {
+    fprintf(stderr,
+	    "getaddrinfo: %s\n",
+	    gai_strerror(getaddrinfo_failed));
     return 1;
   }
-  /*END: get addrinfo*/
-  
-  printf("The client is up and running.\n");
-  /*START:create socket and connect to AWS*/
-  for ( p = servinfo; p != NULL; p = p->ai_next ) {
-    if ( (sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1 ) {
-      perror("client: socket");
-      continue;
-    }
-    // Connect to 1st poss result from servinfo.
-    if ( connect(sockfd, p->ai_addr, p->ai_addrlen) == -1 ) {
-      close(sockfd);
-      perror("client: connect");
-      continue;
-    }
-    break;
-  }
-  /*END:create socket and connect to AWS*/
 
-  /*START: connection error check*/
-  if ( p == NULL ) {
-    fprintf(stderr, "client: failed to connect\n");
-    return 2;
-  }
-  /*END: connection error check*/
-  
-  freeaddrinfo(servinfo); // all done with this structure
-  
-  char *msgToAWS = (char *)calloc(256, sizeof(*msgToAWS));
-  sprintf(msgToAWS, "%s %s %s", argv[1], argv[2], argv[3]);
-  if ( send(sockfd, msgToAWS, 256, 0) == -1 ) {
-    perror("Failed to send intial client msg to AWS!\n");
-    close(sockfd);
-    exit(0);
-  }
-  printf("The client has sent query to AWS using TCP over port %s:\n", AWSPORT);
-  printf("start vertex %s; map %s; file size %s.\n", argv[2], argv[1], argv[3]);
-  free(msgToAWS);
+  printf("The client is up and running.\n");
+  create_sock_and_connect(clnt_sock_fd, possible_cnntns);
+  freeaddrinfo(possible_cnntns);
+
+  send_msg(clnt_sock_fd, 256, argv);
+  printf("The client has sent query to AWS using TCP");
+  printf("over port %s:\n", AWSPORT);
+  printf("start vertex %s; ", argv[2]);
+  printf("map %s; ", argv[1]);
+  printf("file size %s.\n", argv[3]);
 
   int clientBufSize = 2048;
   char *clientBuf = (char *)calloc(clientBufSize, sizeof(*clientBuf));
   int numRecvBytes;
 
   /*START: Receive the Distances*/
-  if ( ( numRecvBytes = recv(sockfd, clientBuf, clientBufSize, 0) ) == -1) {
+  if ( ( numRecvBytes = recv(clnt_sock_fd, clientBuf, clientBufSize, 0) ) == -1) {
     perror("Error: receiving initial Client Data\n");
-    close(sockfd);
+    close(clnt_sock_fd);
     exit(0);
   }
   clientBuf[numRecvBytes] = '\0';
@@ -117,9 +79,9 @@ int main (int argc, char *argv[])
 
   /*START: Receive the Delays*/
   memset(clientBuf, 0, clientBufSize * sizeof(*clientBuf));
-  if ( ( numRecvBytes = recv(sockfd, clientBuf, clientBufSize, 0) ) == -1) {
+  if ( ( numRecvBytes = recv(clnt_sock_fd, clientBuf, clientBufSize, 0) ) == -1) {
     perror("Error: receiving initial Client Data\n");
-    close(sockfd);
+    close(clnt_sock_fd);
     exit(0);
   }
   clientBuf[numRecvBytes] = '\0';
@@ -139,8 +101,8 @@ int main (int argc, char *argv[])
 	   propagation_delays + i,
 	   total_delays + i );
   }
-  /*END: Receive the Delays*/  
-  
+  /*END: Receive the Delays*/
+
   printf("The client has received results from AWS:\n");
   for (int i = 0; i < 67; ++i) { printf( (i != 66) ? "-" : "-\n" ); }
   printf("Destination     MinLength     TransDelay     PropDelay     TotDelay\n");
@@ -150,7 +112,7 @@ int main (int argc, char *argv[])
   }
   for (int i = 0; i < 67; ++i) { printf( (i != 66) ? "-" : "-\n" ); }
 
-  
-  close(sockfd);
+
+  close(clnt_sock_fd);
   return 0;
 }

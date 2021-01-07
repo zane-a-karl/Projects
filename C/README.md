@@ -12,3 +12,11 @@ Note: a lack of a checked-box means incomplete.
       - https://wiki.openssl.org/index.php/AES
       - https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption
       - https://stackoverflow.com/questions/42797594/can-aes-gcm-tag-be-set-after-calling-evp-decryptupdate?noredirect=1&lq=1
+
+
+Personal Style Guidelines:
+  - Most functions should return void, if not detail the reason.
+  - Any given line is capped at 70 characters, roughly the width of an emacs session split in half.
+  - Function input is ordered like so:
+    - Outputs come first in alphabetical order by variable TYPE and then by NAME.
+    - Inputs come second in alphabetical order by variable TYPE and then by NAME.

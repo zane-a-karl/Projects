@@ -1,28 +1,14 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <arpa/inet.h>
 #include "client-utils.h"
 
-#define CLNTPORT "4141"
-#define AWSPORT "4242" // the port client will be connecting to
-
-#define MAXDATASIZE 100 // max number of bytes we can get at once
+#define CLNTPORT "4141" // port # clnt proc runs on
+#define AWSPORT "4242"  // port # AWS proc runs on
 
 
 int main (int argc,
 	  char *argv[]) {
 
-  int clnt_sock_fd, numbytes;
+  int clnt_sock_fd;
   int getaddrinfo_failed;
-  char buf[MAXDATASIZE];
-  char s[INET6_ADDRSTRLEN];
   struct addrinfo sock_preferences;
   struct addrinfo *possible_cnntns;
 
@@ -39,79 +25,63 @@ int main (int argc,
     return 1;
   }
 
-  printf("The client is up and running.\n");
-  create_sock_and_connect(clnt_sock_fd, possible_cnntns);
+  create_sock_and_connect(&clnt_sock_fd,
+			  possible_cnntns);
   freeaddrinfo(possible_cnntns);
+  printf("The client is up and running.\n");
 
-  send_msg(clnt_sock_fd, 256, argv);
+  send_tcp_msg(clnt_sock_fd, 256, argv);
   printf("The client has sent query to AWS using TCP");
   printf("over port %s:\n", AWSPORT);
   printf("start vertex %s; ", argv[2]);
   printf("map %s; ", argv[1]);
   printf("file size %s.\n", argv[3]);
 
-  int clientBufSize = 2048;
-  char *clientBuf = (char *)calloc(clientBufSize, sizeof(*clientBuf));
-  int numRecvBytes;
+  int clnt_buf_len = 2048;
+  char *clnt_buf = (char *)calloc(clnt_buf_len,
+				  sizeof *clnt_buf);
+  int distances_len;
+  recv_tcp(clnt_buf,
+	   clnt_buf_len,
+	   clnt_sock_fd); // distances
+  calc_distances_len(&distances_len, clnt_buf);
+  int *distances = (int *)calloc(distances_len,
+				 sizeof *distances);
+  parse_buf_for_distances(distances,
+			  clnt_buf,
+			  distances_len);
 
-  /*START: Receive the Distances*/
-  if ( ( numRecvBytes = recv(clnt_sock_fd, clientBuf, clientBufSize, 0) ) == -1) {
-    perror("Error: receiving initial Client Data\n");
-    close(clnt_sock_fd);
-    exit(0);
-  }
-  clientBuf[numRecvBytes] = '\0';
-  int num_distances = 1; // The last line has no '\n'
-  for ( int i = 0; i < strlen(clientBuf); ++i ) {
-    if (clientBuf[i] == ' ') { ++num_distances; }
-  }
-
-  int *whitespace_locs = (int *)calloc( num_distances, sizeof(*whitespace_locs) );
-  int wl_i = 0;
-  for ( int i = 0; i < strlen(clientBuf); ++i ) {
-    if (clientBuf[i] == ' ') { whitespace_locs[++wl_i] = i; } // pre-fix increment to account for string structure.
-  }
-  int *distances = (int *)calloc(num_distances, sizeof(*distances));
-  for ( int i = 0;  i != num_distances; ++i ) {
-    sscanf(clientBuf + ( i == 0 ? i : whitespace_locs[i] ), "%d ", distances + i);
-  }
-  /*END: Receive the Distances*/
-
-  /*START: Receive the Delays*/
-  memset(clientBuf, 0, clientBufSize * sizeof(*clientBuf));
-  if ( ( numRecvBytes = recv(clnt_sock_fd, clientBuf, clientBufSize, 0) ) == -1) {
-    perror("Error: receiving initial Client Data\n");
-    close(clnt_sock_fd);
-    exit(0);
-  }
-  clientBuf[numRecvBytes] = '\0';
-
-  double *total_delays = (double *)calloc( num_distances, sizeof(*total_delays) );
-  double *propagation_delays = (double *)calloc( num_distances, sizeof(*propagation_delays) );
-  double *transmission_delays = (double *)calloc( num_distances, sizeof(*transmission_delays) );
-  int *newline_locs = (int *)calloc( num_distances, sizeof(*newline_locs) );
-  int nl_i = 0;
-  for ( int i = 0; i < strlen(clientBuf); ++i ) {
-    if (clientBuf[i] == '\n') { newline_locs[++nl_i] = i; } // pre-fix increment to account for string structure.
-  }
-  for ( int i = 0;  i != num_distances; ++i ) {
-    sscanf(clientBuf + (i == 0 ? i : newline_locs[i] ),
-	   "%lf %lf %lf",
-	   transmission_delays + i,
-	   propagation_delays + i,
-	   total_delays + i );
-  }
-  /*END: Receive the Delays*/
+  double *ttl_delays = (double *)calloc(distances_len,
+					sizeof(*ttl_delays));
+  double *prop_delays = (double *)calloc(distances_len,
+					 sizeof(*prop_delays));
+  double *trans_delays = (double *)calloc(distances_len,
+					  sizeof(*trans_delays));
+  recv_tcp(clnt_buf,
+	   clnt_buf_len,
+	   clnt_sock_fd); // delays
+  parse_buf_for_delays(prop_delays,
+		       trans_delays,
+		       ttl_delays,
+		       clnt_buf,
+		       clnt_buf_len,
+		       clnt_sock_fd,
+		       distances_len);
 
   printf("The client has received results from AWS:\n");
-  for (int i = 0; i < 67; ++i) { printf( (i != 66) ? "-" : "-\n" ); }
-  printf("Destination     MinLength     TransDelay     PropDelay     TotDelay\n");
-  for (int i = 0; i < 67; ++i) { printf( (i != 66) ? "-" : "-\n" ); }
-  for (int i = 0; i < num_distances; ++i) {
-    printf( "%-15d %-13d %-14.3f %-13.3f %-16.3f\n", i, distances[i], transmission_delays[i], propagation_delays[i], total_delays[i]);
-  }
-  for (int i = 0; i < 67; ++i) { printf( (i != 66) ? "-" : "-\n" ); }
-
+  print_formatting_dashes(67);
+  printf("Destination     ");
+  printf("MinLength       ");
+  printf("TransDelay      ");
+  printf("PropDelay       ");
+  printf("TotDelay\n");
+  print_formatting_dashes(67);
+  print_results(prop_delays,
+		trans_delays,
+		ttl_delays,
+		distances,
+		distances_len);
+  print_formatting_dashes(67);
 
   close(clnt_sock_fd);
   return 0;

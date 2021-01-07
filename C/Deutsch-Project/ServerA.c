@@ -151,8 +151,8 @@ int main (void)
     perror("recvfrom (awsAddr not filled)");
     exit(1);
   }
-  printf("ServerA: got packet from %s\n", inet_ntop(awsAddr.ss_family, get_in_addr((struct sockaddr *)&awsAddr), s, sizeof s));
-  printf("ServerA: packet is %d bytes long\n", numbytes);
+  //  printf("ServerA: got packet from %s\n", inet_ntop(awsAddr.ss_family, get_in_addr((struct sockaddr *)&awsAddr), s, sizeof s));
+  //  printf("ServerA: packet is %d bytes long\n", numbytes);
   buf[numbytes] = '\0';
   printf("ServerA: packet contains \"%s\"\n", buf);
   char mapID;

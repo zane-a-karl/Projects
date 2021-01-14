@@ -56,7 +56,7 @@ get_in_addr (struct sockaddr *sa) {
  * connection from a client.
  */
 void
-create_sock_and_bind (int *srvrB_sock_fd,             // O
+create_sock_and_bind (int *sock_fd,                   // O
 		      struct addrinfo *poss_cnntns) { // O
 
   int bind_status;
@@ -65,19 +65,19 @@ create_sock_and_bind (int *srvrB_sock_fd,             // O
 	cnntn != NULL;
 	cnntn = cnntn->ai_next ) {
 
-    *srvrB_sock_fd = socket(cnntn->ai_family,
+    *sock_fd = socket(cnntn->ai_family,
 			    cnntn->ai_socktype,
 			    cnntn->ai_protocol);
-    if ( *srvrB_sock_fd == -1 ) {
+    if ( *sock_fd == -1 ) {
       perror("Server B: socket creation failed.");
       continue;
     }
     // Bind to 1st poss result from poss_cnntns.
-    bind_status = bind(*srvrB_sock_fd,
+    bind_status = bind(*sock_fd,
 		       cnntn->ai_addr,
 		       cnntn->ai_addrlen);
     if ( bind_status == -1 ) {
-      close(*srvrB_sock_fd);
+      close(*sock_fd);
       perror("Server B: connection through socket failed.");
       continue;
     }
@@ -100,13 +100,12 @@ prep_buf_and_recv_udp (char *buf,                     // O
 		       int sock_fd) {
 
   memset(buf, 0, buf_len * (sizeof *buf));
-  *addr_len = sizeof *addr;
   int num_recv_bytes = recvfrom(sock_fd,
 				buf,
 				buf_len * sizeof(*buf),
 				MSG_WAITALL,
 				(struct sockaddr *)addr,
-				addr_len);
+				addr_len); // mutated here
   if (num_recv_bytes == -1) {
     perror("recvfrom (aws_addr not filled)");
     exit(1);
@@ -178,8 +177,8 @@ recv_udp_distances (char *buf,                     // O
 
 void
 calc_delays (double *prop_delays,  // O
-	     double *total_delays, // O
 	     double *trans_delays, // O
+	     double *ttl_delays, // O
 	     int *distances,
 	     int distances_len,
 	     int prop_speed,
@@ -189,7 +188,7 @@ calc_delays (double *prop_delays,  // O
   for ( int i = 0; i < distances_len; ++i ) {
     prop_delays[i] = (double)distances[i] / prop_speed;
     trans_delays[i] = (double)file_size / ( 8*trans_speed );
-    total_delays[i] = prop_delays[i] + trans_delays[i];
+    ttl_delays[i] = prop_delays[i] + trans_delays[i];
   }
 }
 
@@ -202,42 +201,37 @@ print_formatting_dashes (int n) {
 }
 
 void
-print_results (double *total_delays,
+print_results (double *ttl_delays,
 	       int distances_len) {
 
   print_formatting_dashes(25);
-  printf("Destination     Delay\n");
+  printf("Destination     TtlDelay\n");
   print_formatting_dashes(25);
   for ( int i = 0; i < distances_len; ++i ) {
     printf("%-15d %.6f\n",
 	   i,
-	   total_delays[i]);
+	   ttl_delays[i]);
   }
   print_formatting_dashes(25);
 }
 
 void
 prep_buf_to_send_delays (char *buf, // O
-			 double *trans,
-			 double *prop,
-			 double *total,
+			 double *prop_delays,
+			 double *trans_delays,
+			 double *ttl_delays,
 			 int buf_len,
 			 int distances_len) {
 
   memset(buf, 0, buf_len * sizeof(*buf));
   for (int i = 0; i < distances_len; ++i) {
+    sprintf(buf + strlen(buf),
+	    "%.3f %.3f %.3f",
+	    prop_delays[i],
+	    trans_delays[i],
+	    ttl_delays[i] );
     if (i != distances_len-1) {
-      sprintf( buf + strlen(buf),
-	       "%.3f %.3f %.3f\n",
-	       trans[i],
-	       prop[i],
-	       total[i] );
-    } else {
-      sprintf( buf + strlen(buf),
-	       "%.3f %.3f %.3f",
-	       trans[i],
-	       prop[i],
-	       total[i] );
+      sprintf(buf + strlen(buf), "\n");
     }
   }
 }

@@ -75,8 +75,8 @@ int main (int argc,
   double *trans_delays = (double *)calloc(distances_len,
 					  sizeof *trans_delays);
   calc_delays(prop_delays,
-	      ttl_delays,
 	      trans_delays,
+	      ttl_delays,
 	      distances,
 	      distances_len,
 	      prop_speed,
@@ -86,9 +86,9 @@ int main (int argc,
   print_results(ttl_delays, distances_len);
 
   prep_buf_to_send_delays(buf,
+			  prop_delays,
 			  trans_delays,
 			  ttl_delays,
-			  prop_delays,
 			  buf_len,
 			  distances_len);
   send_udp_delays(buf,
@@ -97,6 +97,13 @@ int main (int argc,
 		  srvrB_sock_fd,
 		  aws_addr_len);
   printf("Server B finished sending output to AWS\n");
+  for (int i = 0; i < distances_len; ++i) {
+    printf( "%-16d %-14.3f %-13.3f %-16.3f\n",
+	    i,
+	    prop_delays[i],
+	    trans_delays[i],
+	    ttl_delays[i]);
+  }
 
   close(srvrB_sock_fd);
   return 0;

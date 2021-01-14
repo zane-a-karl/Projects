@@ -61,8 +61,8 @@ recv_udp_distances (char *buf,                     // O
 
 void
 calc_delays (double *prop_delays,  // O
-	     double *total_delays, // O
 	     double *trans_delays, // O
+	     double *ttl_delays, // O
 	     int *distances,
 	     int distances_len,
 	     int prop_speed,
@@ -73,14 +73,14 @@ void
 print_formatting_dashes (int n);
 
 void
-print_results (double *total_delays,
+print_results (double *ttl_delays,
 	       int distances_len);
 
 void
 prep_buf_to_send_delays (char *buf, // O
-			 double *trans,
-			 double *total,
-			 double *prop,
+			 double *prop_delays,
+			 double *trans_delays,
+			 double *ttl_delays,
 			 int buf_len,
 			 int distances_len);
 

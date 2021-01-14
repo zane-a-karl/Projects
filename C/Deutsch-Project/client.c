@@ -69,19 +69,19 @@ int main (int argc,
 		       distances_len);
 
   printf("The client has received results from AWS:\n");
-  print_formatting_dashes(67);
+  print_formatting_dashes(72);
   printf("Destination     ");
   printf("MinLength       ");
   printf("TransDelay      ");
   printf("PropDelay       ");
-  printf("TotDelay\n");
-  print_formatting_dashes(67);
+  printf("TtlDelay\n");
+  print_formatting_dashes(72);
   print_results(prop_delays,
 		trans_delays,
 		ttl_delays,
 		distances,
 		distances_len);
-  print_formatting_dashes(67);
+  print_formatting_dashes(72);
 
   close(clnt_sock_fd);
   return 0;

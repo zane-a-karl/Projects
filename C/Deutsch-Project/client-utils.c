@@ -182,8 +182,8 @@ parse_buf_for_delays (double *p_delays,   // O
   for ( int i = 0;  i != distances_len; ++i ) {
     sscanf(buf + newline_locs[i],
            "%lf %lf %lf",
-           t_delays + i,
            p_delays + i,
+           t_delays + i,
            ttl_delays + i );
   }
 }
@@ -204,7 +204,7 @@ print_results (double *p_delays,
 	       int distances_len) {
 
   for (int i = 0; i < distances_len; ++i) {
-    printf( "%-16d %-16d %-16.3f %-16.3f %-16.3f\n",
+    printf( "%-15d %-15d %-15.3f %-15.3f %-15.3f\n",
 	    i,
 	    distances[i],
 	    t_delays[i],

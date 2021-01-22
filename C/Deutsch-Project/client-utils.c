@@ -135,6 +135,7 @@ parse_buf_for_distances (int *distances, // O
     sscanf(buf + ( i == 0 ? i : whitespace_locs[i] ),
 	   "%d ", distances + i);
   }
+  free(whitespace_locs);
 }
 
 /** Populate the distances array after parsing them from the
@@ -186,6 +187,7 @@ parse_buf_for_delays (double *p_delays,   // O
            t_delays + i,
            ttl_delays + i );
   }
+  free(newline_locs);
 }
 
 void

@@ -55,6 +55,8 @@ int *find_shortest_path_tree (int **A,
       }
     }
   }
+  free(distances);
+
   return distances;
 }
 
@@ -76,7 +78,7 @@ int main ()
   //int *a[6] = {a6};//{a0, a1, a2, a3, a4, a5};
   int *A[6] = {a0, a1, a2, a3, a4, a5};
 
-  int *d = (int *)calloc(v, sizeof(*d));
+  int *d = (int *)calloc(v, sizeof *d);
   d = find_shortest_path_tree(A, v, 5);
   for (int i = 0; i < v; ++i) {
     printf( (i != v-1) ? "%d " : "%d\n", d[i] );

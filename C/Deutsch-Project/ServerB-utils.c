@@ -116,6 +116,7 @@ prep_buf_and_recv_udp (char *buf,                     // O
 	    get_in_addr((struct sockaddr *)addr),
 	    s,
 	    sizeof s);
+  free(s);
 }
 
 /**
@@ -173,6 +174,7 @@ recv_udp_distances (char *buf,                     // O
 	   "%d ",
 	   distances + i);
   }
+  free(whitespc_locs);
 }
 
 void

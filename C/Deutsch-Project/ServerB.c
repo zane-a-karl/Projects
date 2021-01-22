@@ -106,5 +106,12 @@ int main (int argc,
   }
 
   close(srvrB_sock_fd);
+
+  free(buf);
+  free(distances);
+  free(prop_delays);
+  free(trans_delays);
+  free(ttl_delays);
+
   return 0;
 }

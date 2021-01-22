@@ -45,13 +45,13 @@ int main (int argc,
 
   int map_i = -1;
   int *num_vertices = (int *)calloc(num_maps,
-				    sizeof(*num_vertices));
+				    sizeof *num_vertices);
   int *num_edges =  (int *)calloc(num_maps,
-				  sizeof(*num_edges));
+				  sizeof *num_edges);
   int *prop_speed = (int *)calloc(num_maps,
-				  sizeof(*prop_speed));
+				  sizeof *prop_speed);
   int *trans_speed = (int *)calloc(num_maps,
-				   sizeof(*trans_speed));
+				   sizeof *trans_speed);
   print_formatting_dashes(34);
   printf("MapID     NumVertices     NumEdges\n");
   print_formatting_dashes(34);
@@ -84,10 +84,10 @@ int main (int argc,
   rewind_map_file(&fin);
   map_i = map_id - 65; // convert map ID to int.
   int **adj_mat = (int **)calloc(num_vertices[map_i],
-				 sizeof(*adj_mat));
+				 sizeof *adj_mat);
   for (int i = 0; i < num_vertices[map_i]; ++i) {
     adj_mat[i] = (int *)calloc(num_vertices[map_i],
-			       sizeof(*adj_mat[i]));
+			       sizeof *adj_mat[i]);
   }
 
   construct_chosen_graph(adj_mat,
@@ -110,7 +110,7 @@ int main (int argc,
 
   /*START: Perform find shortest path tree alg*/
   int *distances = calloc(num_vertices[map_i],
-			  sizeof(*distances));
+			  sizeof *distances);
   distances = find_shortest_path_tree(adj_mat,
 				      num_vertices[map_i],
 				      start_node);
@@ -146,6 +146,17 @@ int main (int argc,
   /*END: sending udp packets*/
 
   close(srvrA_sock_fd);
+
+  for (int i = 0; i < num_vertices[map_i]; ++i) {
+    free(adj_mat[i]);
+  }
+  free(adj_mat);
+  free(buf);
+  free(distances);
+  free(num_edges);
+  free(num_vertices);
+  free(prop_speed);
+  free(trans_speed);
 
   return 0;
 }

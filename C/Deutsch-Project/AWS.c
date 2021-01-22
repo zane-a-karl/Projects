@@ -17,8 +17,6 @@ main (int argc,
   int getaddrinfo_result;
   struct addrinfo tcp_sock_prefs, udp_sock_prefs;
   struct addrinfo *tcp_poss_cnntns, *udp_poss_cnntns;
-  struct sockaddr_storage aws_addr;
-  socklen_t aws_addr_len;
 
   check_number_of_args(argc);
 
@@ -242,6 +240,8 @@ main (int argc,
   } // while loop
 
   close(clnt_fd);
+
+  free(buf);
 
   return 0;
 }

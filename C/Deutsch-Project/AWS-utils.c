@@ -133,7 +133,6 @@ create_udp_sock_and_bind (int *sock_fd,                   // O
 			  struct addrinfo *poss_cnntns) { // O
 
   int bind_status;
-  int setsockopt_status;
   struct addrinfo *cnntn;
   for ( cnntn = poss_cnntns;
 	cnntn != NULL;
@@ -222,6 +221,7 @@ get_port (struct sockaddr *addr) {
 	      get_in_addr( (struct sockaddr *)&addr ),
 	      ip_addr,
 	      INET_ADDRSTRLEN);
+    free(ip_addr);
     return ( (struct sockaddr_in *)&addr )->sin_port;
 
   } else if (addr->sa_family == AF_INET6) {
@@ -231,6 +231,7 @@ get_port (struct sockaddr *addr) {
 	      get_in_addr( (struct sockaddr *)&addr ),
 	      ip_addr,
 	      INET6_ADDRSTRLEN);
+    free(ip_addr);
     return ( (struct sockaddr_in6 *)&addr )->sin6_port;
 
   } else {
@@ -405,6 +406,7 @@ parse_buf_for_distances (int *distances_len, // O
 	   "%*d %d\n",
 	   *distances + i);
   }
+  free(newline_locs);
 }
 
 
@@ -539,6 +541,7 @@ parse_buf_for_delays (double **p_delays,   // O
 	   *t_delays + i,
 	   *ttl_delays + i );
   }
+  free(newline_locs);
 }
 
 /** Prints the table with the delays results

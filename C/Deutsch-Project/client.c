@@ -84,5 +84,12 @@ int main (int argc,
   print_formatting_dashes(72);
 
   close(clnt_sock_fd);
+
+  free(clnt_buf);
+  free(distances);
+  free(prop_delays);
+  free(trans_delays);
+  free(ttl_delays);
+
   return 0;
 }

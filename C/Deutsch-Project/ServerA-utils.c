@@ -287,6 +287,7 @@ prep_buf_and_recv_udp (char *buf,                     // O
 	    get_in_addr((struct sockaddr *)addr),
 	    s,
 	    sizeof s);
+  free(s);
 }
 
 /**
@@ -378,6 +379,7 @@ prep_buf_and_send_udp_speeds (char *buf,
 	    get_in_addr((struct sockaddr *)addr),
 	    s,
 	    sizeof s);
+  free(s);
 }
 
 /**
@@ -417,4 +419,5 @@ prep_buf_and_send_udp_dists (char *buf,
 	    get_in_addr((struct sockaddr *)addr),
 	    s,
 	    sizeof s);
+  free(s);
 }

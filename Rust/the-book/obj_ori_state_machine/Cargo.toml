@@ -1,5 +1,5 @@
 [package]
-name = "fearless_concurrency"
+name = "obj_ori_state_machine"
 version = "0.1.0"
 authors = ["zane <zane.a.karl@gmail.com>"]
 edition = "2018"

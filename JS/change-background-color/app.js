@@ -11,7 +11,7 @@ slider.oninput = function() {
     changeHex(v);
 }
 
-// https://www.w3schools.com/css/css_colors_hex.asp was super helpful.
+// https://www.w3schools.com/css/css_colors_hex.asp is super helpful.
 function changeHex(v) {
     var col, r, g, b;
     let step = 255;

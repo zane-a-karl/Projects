@@ -11,9 +11,13 @@ slider.oninput = function() {
     changeHex(v);
 }
 
+function rgbToHex(r, g, b) {
+    return "#" + r.toString(16) + g.toString(16) + b.toString(16);
+}
+
 // https://www.w3schools.com/css/css_colors_hex.asp is super helpful.
 function changeHex(v) {
-    var col, r, g, b;
+    var r, g, b;
     let step = 255;
     let phase = Math.floor(v/step);
     switch (phase) {
@@ -43,13 +47,12 @@ function changeHex(v) {
 	b = step;
 	break;
     }
-    col = w3color("rgb(" + r + "," + g + "," + b + ")");
-    body.style.background = col.toRgbString();
-    document.querySelector('.hexresulttext').innerHTML = col.toHexString();
-    if (col.isDark(150)) {
+
+    body.style.background = "rgb(" + r + "," + g + "," + b + ")";
+    document.querySelector('.hexresulttext').innerHTML = rgbToHex(r, g, b);
+    if ( b == 255 ) {
 	document.querySelector('.hexresulttext').style.color = "#ffffff";
     } else {
 	document.querySelector('.hexresulttext').style.color = "#1f2d3d";
     }
 }
-

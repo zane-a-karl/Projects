@@ -13,3 +13,6 @@
 *.plist
 *.storyboard
 **/Sounds
+**/Solidity/build
+**/Solidity/migrations
+**/Solidity/test

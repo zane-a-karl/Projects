@@ -7,8 +7,7 @@ Note: a lack of a checked-box means incomplete.
     - [x] 2 randomly changing the background to hex color by clicking button
     - [ ] 3 quote project
   - Personal Twists on 101 JS projects for beginners
-    - [ ] Horizontal ROYGBIV color slider
-      - add left and right buttons?
+    - [x] Horizontal ROYGBIV color slider
   - [ ] I invent with python cipher wheel
     - view-source:https://inventwithpython.com/cipherwheel/
   - [ ] Conditional rendering with Gangnum sprite images (you can find them in the swift bear animation proj)

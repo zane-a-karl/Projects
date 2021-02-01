@@ -4,7 +4,7 @@ This will be the repository for all projects starting 09/08/20.
 This is a tentative list of possible new projects with related links and no associcated language yet:
 
   - [ ] Echo server
-    - reads something off the network and replies with its input
+    - reads something off the network and replies with its input maybe throw in a rotional or substitution encryption
 
   - [ ] Interpreter for pre/post-fix calculator
 
@@ -13,9 +13,6 @@ This is a tentative list of possible new projects with related links and no asso
 
   - [ ] Simple email client/server (SMTP, IMAP, POP, MAPI, MIME, etc.)
     - https://tools.ietf.org/html/rfc5321
-
-  - [ ] Do your second project from here https://jsbeginners.com/javascript-projects-for-beginners/
-  - [ ] And finish your first project by cleaning up that w3schools code and adding single color change buttons
 
   - [ ] Write your has-been-used bash script
 

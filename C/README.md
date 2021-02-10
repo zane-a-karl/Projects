@@ -12,6 +12,11 @@ Note: a lack of a checked-box means incomplete.
       - https://wiki.openssl.org/index.php/AES
       - https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption
       - https://stackoverflow.com/questions/42797594/can-aes-gcm-tag-be-set-after-calling-evp-decryptupdate?noredirect=1&lq=1
+  - Modes of Operation
+    - ECB
+      - [x] 1x threaded
+      - [x] multi-threaded
+      - [ ] cleanup with makefile for tests
 
 
 Personal Style Guidelines:

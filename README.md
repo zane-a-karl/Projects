@@ -9,6 +9,7 @@ This is a tentative list of possible new projects with related links and no asso
   - [ ] Interpreter for pre/post-fix calculator
 
   - [ ] FTP server
+    - See how many switch cases you'll need to handle all the cmds!
     - https://tools.ietf.org/html/rfc959
 
   - [ ] Simple email client/server (SMTP, IMAP, POP, MAPI, MIME, etc.)

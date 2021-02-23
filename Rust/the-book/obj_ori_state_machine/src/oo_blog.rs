@@ -1,12 +1,27 @@
-/** TODO:
- *  - duplication includes the similar implementations of the
- *  request_review and approve methods on Post. Both methods
- *  delegate to the implementation of the same method on the
- *  value in the state field of Option and set the new value
- *  of the state field to the result. If we had a lot of
- *  methods on Post that followed this pattern, we might
- *  consider defining a macro to eliminate the repetition
+/**
+ * This is pretty cool, because you did this entire
+ * project sequence and even added the posited option
+ * of a delcarative macro that reduced the amount of code
+ * duplication. It was even an interesting macro b/c
+ * you had to use 'self' within the body and to do that
+ * you needed to pass self as a argument to the macro.
  */
+
+#[macro_use]
+mod macros {
+    macro_rules! apply {
+        ($self:ident, $func:ident) => {
+            if let Some(s) = $self.state.take() {
+                $self.state = Some(s.$func());
+            }
+        };
+	($self:ident, $func:ident($input:expr)) => {
+            if let Some(s) = $self.state.take() {
+                $self.state = Some(s.$func($input));
+            }
+        };
+    }
+}
 
 pub struct Post {
     // Need to wrap in Option<T> b/c w/o it any call to
@@ -43,21 +58,15 @@ impl Post {
         self.state.as_ref().unwrap().content(self)
     }
     pub fn request_review(&mut self) {
-        if let Some(s) = self.state.take() {
-            self.state = Some(s.request_review());
-        }
+	apply!(self, request_review);
     }
     pub fn approve(&mut self) {
         self.approval_stamps += 1;
-        if let Some(s) = self.state.take() {
-            self.state = Some(s.approve(&self));
-        }
+	apply!(self, approve(&self));
     }
     pub fn reject(&mut self) {
         self.approval_stamps = 0;
-        if let Some(s) = self.state.take() {
-            self.state = Some(s.reject());
-        }
+        apply!(self, reject);
     }
 }
 

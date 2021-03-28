@@ -1,5 +1,5 @@
 #include "ecb.h"
-#include <math.h> // ceil
+#include <math.h> // ceil()
 #include <pthread.h>
 #include <stdio.h>
 
@@ -12,6 +12,13 @@
  * single threaded version... did you do something wrong?
  * - Maybe clean up the code if you feel like it. Especially the 
  * thread data struct because it has alot of redundancy.
+ * - take a file as input to really test the threading speed.
+
+ * TODO!!!
+ *   - You're not DONE with ECB! You need to organize the code better
+so that you can run all of the modes on a single Cipher struct
+that takes a FILE input and output stream and can enc all the blocks
+correctly.
  */
 
 /** ECB OVERVIEW
@@ -112,6 +119,23 @@ ecb (bool **output, // O
 			input_len);
 
   free_mem(&output_blocks, &input_blocks, &padded_input, n_blocks);
+}
+
+void
+ecb_org (Cipher *c) {
+
+  int n_blocks = ceil((double)c->input_len / (double)c->block_len);
+  int pad_len = n_blocks * c->block_len;
+  bool *padded_input = (bool *)calloc(pad_len, sizeof *padded_input);
+  pad_input(&padded_input, input, input_len, pad_len);
+  
+  bool **input_blocks = (bool **)calloc(n_blocks,
+					sizeof *input_blocks);
+  for (int i = 0; i < n_blocks; ++i) {
+    input_blocks[i] = (bool *)calloc(block_len,
+				     sizeof **input_blocks);
+    split_into_blocks(&input_blocks, padded_input, i, block_len);
+  }
 }
 
 void *

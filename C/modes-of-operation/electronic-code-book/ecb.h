@@ -42,6 +42,9 @@ ecb (bool **output, // O
      int key_len);
 
 void
+ecb_org (Cipher *c);
+
+void
 threaded_ecb (bool **output, // O
 	      bool *input,
 	      bool *key,
@@ -51,26 +54,26 @@ threaded_ecb (bool **output, // O
 
 // ####################### Util functions #######################
 void
-pad_input (bool **padded_input,
+pad_input (bool **padded_input, // O
 	   bool *input,
 	   int input_len,
 	   int pad_len);
 
 void
-split_into_blocks (bool ***input_blocks,
+split_into_blocks (bool ***input_blocks, // O
 		   bool *padded_input,
 		   int block,
 		   int block_len);
 
 void
-split_into_blocks_for_thd (bool **input_block,
+split_into_blocks_for_thd (bool **input_block, // O
 			   bool *padded_input,
 			   int block,
 			   int block_len);
 
 void
-encode (bool ***output_blocks,
-	bool **input_blocks,
+encode (bool ***output_blocks, // O
+	bool **input_blocks, // O
 	bool *key,
 	int block,
 	int block_len,
@@ -87,15 +90,15 @@ copy_blocks_to_output (bool **output, // O
 		       int input_len);
 
 void
-copy_thd_blocks_to_output (bool **output,
+copy_thd_blocks_to_output (bool **output, // O
 			   thread_data thd[],
 			   int n_blocks,
 			   int input_len);
 
 void
-free_mem (bool ***output_blocks,
-	  bool ***input_blocks,
-	  bool **padded_input,
+free_mem (bool ***output_blocks, // O
+	  bool ***input_blocks, // O
+	  bool **padded_input, // O
 	  int n_blocks);
 
 #endif // _ECB_H_

@@ -1,9 +1,12 @@
-#ifndef _UTILS_H_
-#define _UTILS_H_
+#ifndef _UTILS_ALL_MODES_H_
+#define _UTILS_ALL_MODES_H_
 
+#include <assert.h>
+#include <math.h> // floor
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #ifdef DEBUG
   #define PRINTD(M, ...) fprintf(stderr, "\n[INFO] (%s:%d) "M"\n\n",\
@@ -31,18 +34,19 @@ static double sec;
 	      fprintf(stderr,"Line:%5d, Time = %f\n",__LINE__,sec);
 
 typedef enum {
-  ECB, CBC, CFB, OFB, CTR;
+  ECB, CBC, CFB, OFB, CTR
 } CIPHERMODE;
 
-typedef struct Cipher {
-  FILE *output;
-  FILE *input;
+typedef struct CipherInfo {
   bool *key;
-  int input_len;
-  int block_len;
-  int key_len;
+  char *i_file;
+  char *o_file;
+  int b_len;
+  int i_len;
+  int k_len;
+  int n_blocks;
   CIPHERMODE type;
-} Cipher;
+} CipherInfo;
 
 void
 ascii_to_bits (bool **bit_str, // O
@@ -53,16 +57,32 @@ bits_to_ascii (char **ascii_str, // O
 	       bool *bit_str,
 	       int bit_str_len);
 
-static inline void
+void
 print_bits (bool *arr,
-	    int len) {
+	    int len);
 
-  for (int i = 0; i < len; ++i) {
-    for (int j = 0; j < 8; ++j) {
-      printf("%d", arr[8*i + j]);
-    }
-    printf("\n");
-  }
-}
+int
+set_cipher_mode (char *mode);
 
-#endif // _UTILS_H_
+void
+get_num_input_blocks (int *n_blocks, // O
+		      char *input_filename,
+		      int block_length);
+
+void
+get_key_length (int *key_len, // O
+		char *key_filename);
+
+void
+get_key (char **key, // O
+	 char *key_filename);
+
+void
+handle_return_FILE_error (char *error_str,
+			  FILE* f);
+
+void
+handle_return_int_error (char *error_str,
+			 int ret_val);
+
+#endif // _UTILS_ALL_MODES_H_

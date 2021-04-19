@@ -1,0 +1,13 @@
+/** POSSIBLE DIRECTIONS TO TAKE THIS CODE
+ *
+ *  - FRIST AND FOREMOST:
+      - create easier testing env for str-inputs
+      - clean up str input code (e.g. rename functions)
+      - clean up file input code (e.g. give it a utils file)
+ *  - Maybe do a shared memory key and then socket io message
+ * test with ecb?
+ *
+ *  - Figure out how to deal with formatting cipher text that falls
+ *  in the 0 - 31 range because it messes with readability and makes
+ *  pretty much all of these encryptions a bit useless :(
+ */

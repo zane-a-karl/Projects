@@ -15,7 +15,7 @@ This is a tentative list of possible new projects with related links and no asso
   - [ ] Simple email client/server (SMTP, IMAP, POP, MAPI, MIME, etc.)
     - https://tools.ietf.org/html/rfc5321
 
-  - [ ] Write your has-been-used bash script
+  - [ ] Conway's Game of life C? Rust? Bash? all 3?
 
 
 Try to build random github projects from source code:

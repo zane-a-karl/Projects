@@ -7,14 +7,14 @@
  */
 void
 ascii_to_bits (bool **bit_str, // O
-	       char *ascii_str) {
+							 char *asc_str,
+							 int asc_str_len) {
 
   int bits_per_char = 8;
-  int len = strlen(ascii_str);
-  for (int i = 0; i < len; ++i) {
+  for (int i = 0; i < asc_str_len; ++i) {
     for (int j = 0; j < bits_per_char; ++j) {
       (*bit_str)[bits_per_char*i + j] =
-	ascii_str[i] & (1<<(bits_per_char-j-1));
+				asc_str[i] & (1<<(bits_per_char-j-1));
     }
   }
 }
@@ -25,8 +25,8 @@ ascii_to_bits (bool **bit_str, // O
  */
 void
 bits_to_ascii (char **ascii_str, // O
-	       bool *bit_str,
-	       int bit_str_len) {
+							 bool *bit_str,
+							 int bit_str_len) {
 
   int bits_per_char = 8;
   for (int i = 0; i < bit_str_len; ++i) {
@@ -35,9 +35,13 @@ bits_to_ascii (char **ascii_str, // O
   }
 }
 
+/** Prints the 8 bit per char representation of a
+ * boolean array. With each row representing a single
+ * character.
+ */
 void
 print_bits (bool *arr,
-	    int len) {
+						int len) {
 
   int rows = floor(len/8);
   for (int i = 0; i < rows; ++i) {
@@ -59,7 +63,7 @@ set_cipher_mode (char *mode) {
     othermode(CFB);
     othermode(OFB);
     othermode(CTR);
-    #undef othermode
+#undef othermode
   } else {
     printf("Invalid mode\n");
     assert(0);
@@ -68,12 +72,12 @@ set_cipher_mode (char *mode) {
 
 void
 get_num_input_blocks (int *n_blocks, // O
-		      char *input_filename,
-		      int block_length) {
+											char *ptxt_filename,
+											int block_length) {
 
-  FILE *fin = fopen(input_filename, "r");
-  handle_return_FILE_error("Error fopen input_file", fin);
-  int ch, ret_val, input_length = 0;
+  FILE *fin = fopen(ptxt_filename, "r");
+  handle_return_FILE_error("Error fopen ptxt_file", fin);
+  int ch, ret_val, ptxt_length = 0;
   do {
 
     ch = fgetc(fin);
@@ -81,19 +85,21 @@ get_num_input_blocks (int *n_blocks, // O
       break;
     }
     ret_val = ferror(fin);
-    handle_return_int_error("Error ferror input_file", ret_val);
-    ++input_length;
+    handle_return_int_error("Error ferror ptxt_file",
+														ret_val);
+    ++ptxt_length;
 
   } while (1);
   ret_val = fclose(fin);
-  handle_return_int_error("Error fclose key_file", ret_val);
+  handle_return_int_error("Error fclose key_file",
+													ret_val);
 
-  (*n_blocks) = ceil((double)input_length / (block_length/8));
+  (*n_blocks) = ceil((double)ptxt_length / (block_length/8));
 }
 
 void
-get_key_length (int *key_length, // O
-		char *key_filename) {
+get_ascii_key_length (int *key_length, // O
+											char *key_filename) {
 
   FILE *fin = fopen(key_filename, "r");
   handle_return_FILE_error("Error fopen key_file", fin);
@@ -105,17 +111,22 @@ get_key_length (int *key_length, // O
       break;
     }
     ret_val = ferror(fin);
-    handle_return_int_error("Error ferror key_file", ret_val);
+    handle_return_int_error("Error ferror key_file",
+														ret_val);
+		if (ch == '\n') {
+			break;
+		}
     ++(*key_length);
 
   } while (1);
   ret_val = fclose(fin);
-  handle_return_int_error("Error fclose key_file", ret_val);
+  handle_return_int_error("Error fclose key_file",
+													ret_val);
 }
 
 void
-get_key (char **key, // O
-	 char *key_filename) {
+get_ascii_key (char **key, // O
+							 char *key_filename) {
 
   FILE *fin = fopen(key_filename, "r");
   handle_return_FILE_error("Error fopen key_file", fin);
@@ -127,17 +138,25 @@ get_key (char **key, // O
       break;
     }
     ret_val = ferror(fin);
-    handle_return_int_error("Error ferror key_file", ret_val);
+    handle_return_int_error("Error ferror key_file",
+														ret_val);
     (*key)[i++] = ch;
 
   } while (1);
   ret_val = fclose(fin);
-  handle_return_int_error("Error fclose key_file", ret_val);
+  handle_return_int_error("Error fclose key_file",
+													ret_val);
+}
+
+int
+get_bit_key_len (int asc_key_len) {
+
+	return 8 * asc_key_len;
 }
 
 void
 handle_return_FILE_error (char *error_str,
-			  FILE* f) {
+													FILE* f) {
 
   if ( f == NULL ) {
     printf("%s\n", error_str);
@@ -148,7 +167,7 @@ handle_return_FILE_error (char *error_str,
 
 void
 handle_return_int_error (char *error_str,
-			 int ret_val) {
+												 int ret_val) {
 
   if ( ret_val != 0 ) {
     printf("%s\n", error_str);

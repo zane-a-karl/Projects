@@ -1,6 +1,7 @@
 #ifndef _ENCRYPT_FILE_INPUT_H_
 #define _ENCRYPT_FILE_INPUT_H_
 
+#include "../base64-encoder.h"
 #include "../utils-all-modes.h"
 
 #include <math.h> // ceil
@@ -10,10 +11,10 @@
 #include <pthread.h>
 
 typedef struct ThreadData {
-  bool *input_block;
-  bool *output_block;
-  char *ptxt_block;
-  char *ctxt_block;
+  bool *ptxt_block_bits;
+  bool *ctxt_block_bits;
+  char *ptxt_block_asc;
+  Base64 ctxt_block_b64;
   int idx;
   CipherInfo CI;
   FILE *fout;
@@ -27,17 +28,20 @@ pthread_mutex_t write_mutex;
 pthread_cond_t sequential_cond;
 
 bool
-encrypt_using_ecb (char *input_file,
-		   char *key_file,
-		   int b_width);
+encrypt_using_ecb (char *ptxt_file,
+									 char *key_file,
+									 int b_width);
 
 void
 encrypt (CipherInfo CI);
 
 void
-encrypt_block (bool **o_block,
-	       bool *i_block,
-	       CipherInfo CI);
+encrypt_block (bool **c_block,
+							 bool *p_block,
+							 CipherInfo CI);
+
+void
+decrypt (CipherInfo CI);
 
 void
 threaded_encrypt (CipherInfo CI);

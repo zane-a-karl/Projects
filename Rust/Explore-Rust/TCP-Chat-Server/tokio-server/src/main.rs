@@ -23,21 +23,21 @@ async fn main() {
 
             loop {
                 tokio::select! {
-                    result = reader.read_line(&mut line) => {			
-			if result.unwrap() == 0 {
-			    break;
-			}
-			
-			tx.send((line.clone(), addr)).unwrap();
-			line.clear();
+                    result = reader.read_line(&mut line) => {
+                    if result.unwrap() == 0 {
+                        break;
                     }
-		    result = rx.recv() => {			
-			let (msg, other_addr) = result.unwrap();
 
-			if addr != other_addr {
-			    sock_write.write_all(msg.as_bytes()).await.unwrap();
-			}
-		    }
+                    tx.send((line.clone(), addr)).unwrap();
+                    line.clear();
+                    }
+                    result = rx.recv() => {
+                    let (msg, other_addr) = result.unwrap();
+
+                    if addr != other_addr {
+                        sock_write.write_all(msg.as_bytes()).await.unwrap();
+                    }
+                    }
                 }
             }
         });

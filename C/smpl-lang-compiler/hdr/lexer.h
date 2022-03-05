@@ -4,7 +4,6 @@
 #include "../hdr/token.h"
 
 #include <regex.h>
-
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>

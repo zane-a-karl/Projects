@@ -67,6 +67,18 @@ print_token_list (TokenList *tl) {
 }
 
 void
+free_token_list (TokenList *tl) {
+
+	TokenNode *cur = tl->head;
+	TokenNode *prv;
+  while ( cur != NULL ) {
+		prv = cur;
+		cur=cur->next;
+		free(prv);
+	}
+}
+
+void
 create_alnum_token (Token *t,
 										char *buf,
 										int line) {

@@ -2,7 +2,6 @@
 #define _TOKEN_H_
 
 #include <regex.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -82,6 +81,9 @@ push_token_node (TokenList *tl,
 
 void
 print_token_list (TokenList *tl);
+
+void
+free_token_list (TokenList *tl);
 
 /* #define IDENT     re.compile(r"[a-zA-Z]([a-zA-Z0-9]+)?"); */
 /* #define NUMBER    re.compile(r"[0-9]+"); */

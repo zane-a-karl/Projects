@@ -11,7 +11,7 @@ lex (FILE *fin) {
 	Token *t;
 	int ch;
 	char buf[MAX_PROG_LINE_LEN];
-	int cursor = 0;
+	int cursor;
 	int line = 0;
 	regex_t re_alnum;
 	int rv_alnum = regcomp(&re_alnum,
@@ -20,6 +20,9 @@ lex (FILE *fin) {
 	check_regex_compilation(rv_alnum);
 
   do {
+		memset(buf, '\0', strnlen(buf, MAX_PROG_LINE_LEN));
+		cursor = 0;
+
     ch = fgetc(fin);
 		check_ferror(fin);
 		if ( triggered_feof(fin)  )     break;
@@ -55,14 +58,14 @@ lex (FILE *fin) {
 			push_token_node(tl, tn);
 
 		} else {
-			printf("Unknown character found: %c\n", ch);
+			printf("Unknown character found: \"%c\"\n", ch);
+			exit(1);
 		}
 
-		memset(buf, '\0', strnlen(buf, MAX_PROG_LINE_LEN));
-		cursor = 0;
   } while(1);
 
 	printf("Completed tokenizing/lexing\n");
+
 	return tl;
 }
 
@@ -94,7 +97,7 @@ found_whitespace (char ch) {
 bool
 found_newline (char ch,
 							 int *line) {
-	if (ch == '\n') {
+	if (ch == '\n' || ch == '\r') {
 		++(*line);
 		return true;
 	}

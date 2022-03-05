@@ -1,7 +1,7 @@
 
 
 CC=gcc
-CFLAGS=-g -Wall
+CFLAGS=-g -Wall -fsanitize=address
 SRC=src
 OBJ=obj
 SRCS=$(wildcard $(SRC)/*.c)

@@ -93,8 +93,9 @@ create_alnum_token (Token *t,
 												 REG_EXTENDED);
 	check_regex_compilation(rv_number);
 	strncpy(t->raw_tkn, buf, MAX_PROG_LINE_LEN);
-	t->line    = line;
-	printf("%s\n", t->raw_tkn);
+
+	t->line = line;
+
 	if ( strncmp(buf, "main", MAX_PROG_LINE_LEN) == 0 ) {
 		t->type = MAIN;
 	} else if ( strncmp(buf, "function", MAX_PROG_LINE_LEN) == 0 ) {
@@ -141,8 +142,9 @@ create_symbol_token (Token *t,
 										 int line) {
 
 	strncpy(t->raw_tkn, buf, MAX_PROG_LINE_LEN);
-	t->line    = line;
-	printf("%s\n", t->raw_tkn);
+
+	t->line = line;
+
 	if ( strncmp(buf, "!=", MAX_PROG_LINE_LEN) == 0 ) {
 		t->type = OP_INEQ;
 	} else if ( strncmp(buf, "==", MAX_PROG_LINE_LEN) == 0 ) {

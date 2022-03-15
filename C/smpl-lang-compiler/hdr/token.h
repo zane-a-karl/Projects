@@ -52,7 +52,7 @@ typedef enum TokenType {
 
 typedef struct Token {
 	TokenType type;
-	char *raw_tkn;
+	char *raw;// raw token string
 	int val;  // just for #s, left unused for others
 	int line; // line # on which it was parsed
 } Token;
@@ -73,6 +73,9 @@ TokenNode *
 init_token_node (Token *t);
 
 void
+next_token (TokenNode **tn);
+
+void
 clear_token_node (TokenNode *tn);
 
 void
@@ -84,44 +87,6 @@ print_token_list (TokenList *tl);
 
 void
 free_token_list (TokenList *tl);
-
-/* #define IDENT     re.compile(r"[a-zA-Z]([a-zA-Z0-9]+)?"); */
-/* #define NUMBER    re.compile(r"[0-9]+"); */
-/* #define OP_INEQ   "!="; */
-/* #define OP_EQ     "=="; */
-/* #define OP_LT     "<"; */
-/* #define OP_LE     "<="; */
-/* #define OP_GT     ">"; */
-/* #define OP_GE     ">="; */
-/* #define LBRACKET  "["; */
-/* #define RBRACKET  "]"; */
-/* #define LPAREN    "("; */
-/* #define RPAREN    ")"; */
-/* #define LBRACE    "{"; */
-/* #define RBRACE    "}"; */
-/* #define ASTERISK  "*"; */
-/* #define SLASH     "/"; */
-/* #define PLUS      "+"; */
-/* #define MINUS     "-"; */
-/* #define LET       "let"; */
-/* #define LARROW    "<-"; */
-/* #define CALL      "call"; */
-/* #define IF        "if"; */
-/* #define THEN      "then"; */
-/* #define ELSE      "else"; */
-/* #define FI        "fi"; */
-/* #define WHILE     "while"; */
-/* #define DO        "do"; */
-/* #define OD        "od"; */
-/* #define RETURN    "return"; */
-/* #define VAR       "var"; */
-/* #define ARRAY     "array"; */
-/* #define SEMICOLON ";"; */
-/* #define VOID      re.compile(r"void\s+"); */
-/* #define FUNCTION  re.compile(r"function\s+"); */
-/* #define MAIN      re.compile(r"main\s+"); */
-/* #define PERIOD    "."; */
-/* #define COMMA     ","; */
 
 void
 create_alnum_token (Token *t,

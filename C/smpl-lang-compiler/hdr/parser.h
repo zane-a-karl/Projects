@@ -1,7 +1,7 @@
 /**
- * The EBNF for the respective morpheme is located above each 
- * function sharing the same name as the morpheme. I include the
- * "alphabet"-like terms here for convenience
+ * The EBNF for the respective morpheme is located above each
+ * function sharing the same name as the morpheme. I include
+ * the "alphabet"-like terms here for convenience
  *  as they have already been taken into account during lexing.
  * letter = “a”|“b”|...|“z”.
  * digit = “0”|“1”|...|“9”.
@@ -13,10 +13,16 @@
 #ifndef _PARSER_H_
 #define _PARSER_H_
 
+#include "../hdr/var_table.h"
+#include "../hdr/var_decls_list.h"
+#include "../hdr/int_list.h"
+#include "../hdr/str_list.h"
+
 #include "../hdr/token.h"
 #include "../hdr/ast.h"
 #include "../hdr/basic_block.h"
 #include "../hdr/dlx.h"
+#include "../hdr/result.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -24,7 +30,7 @@
 #include <string.h>
 
 /* static const int MAX_NUM_VARS = 1<<8; //256 */
-/* static const int MAX_NAME_LEN = 1<<4; //16 */
+/* static const int MAX_VAR_NAME_LEN = 1<<4; //16 */
 /* static const int MAX_LINE_LEN = 1<<8;//256 */
 /* static const int NUM_REGISTERS = 1<<5; //32 */
 /* static const int NUM_OPCODES = 1<<6; //64 */
@@ -46,7 +52,6 @@ typedef struct Parser {
 	TokenList *tl;
 } Parser;
 
-//Token \"<x>\" not found.
 typedef enum ParserError {
 	COMPUTATION_NO_LBRACE,// Cannot open main
 	COMPUTATION_NO_RBRACE,// Cannot close main
@@ -56,9 +61,10 @@ typedef enum ParserError {
 	VAR_DECL_NO_VAR_NAME ,// Cannnot find var name
 	VAR_DECL_NO_SEMICOLON,// No ending semicolon
 
-	TYPE_DECL_NO_LBRACKET  ,// No opening array bracket	
+	TYPE_DECL_NO_LBRACKET  ,// No opening array bracket
 	TYPE_DECL_NO_RBRACKET  ,// No closing array bracket
 	TYPE_DECL_NO_ARRAY_SIZE,// Cannot find array size
+	TYPE_DECL_NO_TYPE      ,// Cannot find type declaration
 
 	FUNC_DECL_NO_FUNC_NAME,// Cannot find fn name
 	FUNC_DECL_NO_FUNCTION ,// No beginning 'function'
@@ -94,66 +100,87 @@ typedef enum ParserError {
 	WHILE_STATEMENT_NO_OD   ,// No expected 'od'
 
 	RETURN_STATEMENT_NO_RETURN,// No beginning 'return'
-	
+
 	UNK// Unknown parser error code
 } ParserError;
+
+Parser *
+init_parser (char *filename);// calloc
+
+void
+free_parser (Parser **p);
 
 Ast *
 parse (Parser *p);
 
 void
-smpl_computation (TokenNode *tn);
+smpl_computation (TokenNode **tn,
+									Ast **ast);
 
-TokenNode *
-smpl_var_decl (TokenNode *tn);
+void
+smpl_var_decl (TokenNode **tn,
+							 StrList **vl);
 
-TokenNode *
-smpl_type_decl (TokenNode *tn);
+void
+smpl_type_decl (TokenNode **tn,
+								IntList **dl);
 
-TokenNode *
-smpl_func_decl (TokenNode *tn);
+void
+smpl_func_decl (TokenNode **tn,
+								StrList **fl);
 
-TokenNode *
-smpl_formal_param (TokenNode *tn);
+void
+smpl_formal_param (TokenNode **tn);
 
-TokenNode *
-smpl_func_body (TokenNode *tn);
+void
+smpl_func_body (TokenNode **tn);
 
-TokenNode *
-smpl_stat_sequence (TokenNode *tn);
+void
+smpl_stat_sequence (TokenNode **tn,
+										Ast **);
 
-TokenNode *
-smpl_statement (TokenNode *tn);
+void
+smpl_statement (TokenNode **tn,
+								Ast **subtree);
 
-TokenNode *
-smpl_assignment (TokenNode *tn);
+void
+smpl_assignment (TokenNode **tn,
+								 Ast **);
 
-TokenNode *
-smpl_designator (TokenNode *tn);
+void
+smpl_designator (TokenNode **tn,
+								 BasicBlock **bb);
 
-TokenNode *
-smpl_expression (TokenNode *tn);
+void
+smpl_expression (TokenNode **tn,
+								 BasicBlock **bb);
 
-TokenNode *
-smpl_term (TokenNode *tn);
+void
+smpl_term (TokenNode **tn,
+					 BasicBlock **bb);
 
-TokenNode *
-smpl_factor (TokenNode *tn);
+void
+smpl_factor (TokenNode **tn,
+						 BasicBlock **bb);
 
-TokenNode *
-smpl_func_call (TokenNode *tn);
+void
+smpl_func_call (TokenNode **tn,
+								Ast **);
 
-TokenNode *
-smpl_if_statement (TokenNode *tn);
+void
+smpl_if_statement (TokenNode **tn,
+									 Ast **);
 
-TokenNode *
-smpl_while_statement (TokenNode *tn);
+void
+smpl_while_statement (TokenNode **tn,
+											Ast **);
 
-TokenNode *
-smpl_relation (TokenNode *tn);
+void
+smpl_relation (TokenNode **tn);
 
-TokenNode *
-smpl_return_statement (TokenNode *tn);
+void
+smpl_return_statement (TokenNode **tn,
+											 Ast **);
 
 /* int */
 /* val (char *c); */
@@ -165,5 +192,14 @@ psr_err (int line,
 /* int */
 /* lookup (VAR vt[MAX_NUM_VARS], */
 /* 				char *name); */
+
+bool
+optional_token_type_is (TokenType type,
+												TokenNode *tn);
+
+void
+mandatory_token_type_is (TokenType type,
+												 TokenNode *tn,
+												 ParserError e);
 
 #endif // _PARSER_H_

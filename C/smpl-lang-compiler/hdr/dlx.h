@@ -71,11 +71,20 @@ typedef enum InstrType {
 typedef struct Instruction {
 	int ssa_idx;
 	char *raw_dlx_instr;
-	InstrType dlx_instr;
-	int a;
-	int b;
-	int c;
-	struct Instruction next;
+	InstrType op;
+	// TODO: ADD A Result?
+	// Factor struct? to return
+	// from smpl_factor/term/
+	// expression? Maybe have
+	// the 'Result' be a
+	// separate thing and then
+	// you can just pillage it
+	// to fill the instruction
+	// out!!!
+	Result a;
+	Result b;
+	Result c;
+	struct Instruction *next;
 } Instruction;
 
 #endif//_DLX_H_

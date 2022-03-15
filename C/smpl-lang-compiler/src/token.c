@@ -12,6 +12,7 @@ const char *possible_symbols[] = {
 
 Token *
 init_token () {
+
 	Token *t = (Token *)calloc(1, sizeof(Token));
 	t->type = 0;
 	t->raw_tkn = (char *)calloc(MAX_PROG_LINE_LEN, sizeof(char));
@@ -22,14 +23,23 @@ init_token () {
 
 TokenNode *
 init_token_node (Token *t) {
-	TokenNode *tn = (TokenNode *)calloc(1, sizeof(TokenNode));
+
+	TokenNode *tn = (TokenNode *)calloc(1,
+																			sizeof(TokenNode));
 	tn->tkn = t;
 	tn->next = NULL;
 	return tn;
 }
 
 void
+next_token (TokenNode **tn) {
+
+	(*tn) = (*tn)->next;
+}
+
+void
 clear_token_node (TokenNode *tn) {
+
 	tn->tkn->type    = 0;
 	tn->tkn->raw_tkn = calloc(MAX_PROG_LINE_LEN,
 														sizeof(char));
@@ -41,6 +51,7 @@ clear_token_node (TokenNode *tn) {
 void
 push_token_node (TokenList *tl,
 								 TokenNode *new_node) {
+
 	TokenNode *i = tl->head;
 	if ( i == NULL ) {
 		tl->head = new_node;
@@ -192,6 +203,7 @@ create_symbol_token (Token *t,
 
 void
 check_regex_compilation (int rv) {
+
 	if (rv) {
 		perror("Could not compile regex\n");
 		exit(1);

@@ -3,7 +3,7 @@
 StrList *
 init_str_list () {
 
-	StrList *sl = (StrList *)calloc(1, sizeof(List));
+	StrList *sl = (StrList *)calloc(1, sizeof(StrList));
 	sl->head = NULL;
 	return sl;
 }
@@ -13,7 +13,8 @@ init_str_list_node (char *data) {//calloc
 
 	StrListNode *sln;
 	sln = (StrListNode *)calloc(1, sizeof(StrListNode));
-	sln->data = (char *)calloc(MAX_VAR_NAME_LEN, sizeof(char));
+	sln->data = (char *)calloc(MAX_VAR_NAME_LEN,
+														 sizeof(char));
 	for (int i = 0; i < MAX_VAR_NAME_LEN; ++i) {
 		sln->data[i] = data[i];
 	}
@@ -25,13 +26,6 @@ void
 next_str_list_node (StrListNode **sln) {
 
 	(*sln) = (*sln)->next;
-}
-
-void
-clear_str_list_node (StrListNode *sln) {
-
-	memset(sln->data, 0, sizeof(int));
-	sln->next = NULL;
 }
 
 void

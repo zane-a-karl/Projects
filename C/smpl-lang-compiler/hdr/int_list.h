@@ -18,20 +18,17 @@ IntList *
 init_int_list ();
 
 IntListNode *
-init_int_list_node (void *data);
+init_int_list_node (int data);
 
 void
 next_int_list_node (IntListNode **iln);
 
 void
-clear_int_list_node (IntListNode *iln);
-
-void
-push_int_list (IntList *il,
+push_int_list (IntList **il,
 							 IntList *new_il);
 
 void
-push_int_list_node (IntList *il,
+push_int_list_node (IntList **il,
 										IntListNode *new_node);
 
 void
@@ -45,6 +42,6 @@ void
 print_int_list (IntList *il);
 
 void
-free_int_list (IntList *il);
+free_int_list (IntList **il);
 
 #endif//_INT_LIST_H_

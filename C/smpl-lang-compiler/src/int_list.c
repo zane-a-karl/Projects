@@ -3,7 +3,7 @@
 IntList*
 init_int_list () {
 
-	IntList *il = (IntList*)calloc(1, sizeof(List));
+	IntList *il = calloc(1, sizeof(IntList));
 	il->head = NULL;
 	return il;
 }
@@ -12,7 +12,7 @@ IntListNode *
 init_int_list_node (int data) {
 
 	IntListNode *iln;
-	iln = (IntListNode *)calloc(1, sizeof(IntListNode));
+	iln = calloc(1, sizeof(IntListNode));
 	iln->data = data;
 	iln->next = NULL;
 	return iln;
@@ -22,13 +22,6 @@ void
 next_int_list_node (IntListNode **iln) {
 
 	(*iln) = (*iln)->next;
-}
-
-void
-clear_int_list_node (IntListNode *iln) {
-
-	memset(iln->data, 0, sizeof(int));
-	iln->next = NULL;
 }
 
 void
@@ -77,6 +70,7 @@ deep_copy_int_list (IntList *src_il) {//calloc
 	for (IntListNode *i = src_il->head; i != NULL; i=i->next) {
 		push_int_list_data(&dst_il, i->data);
 	}
+	return dst_il;
 }
 
 void

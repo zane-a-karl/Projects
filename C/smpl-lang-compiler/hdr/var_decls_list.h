@@ -9,6 +9,7 @@
 typedef struct VarDeclsListNode {
 	IntList *dimens_list;
 	StrList *idents_list;
+	struct VarDeclsListNode *next;
 } VarDeclsListNode;
 
 typedef struct VarDeclsList {
@@ -23,9 +24,6 @@ init_var_decls_list_node ();
 
 void
 next_var_decls_list_node (VarDeclsListNode **vdln);
-
-void
-clear_var_decls_list_node (VarDeclsListNode **vdln);
 
 void
 push_var_decls_list_node (VarDeclsList **vdl,

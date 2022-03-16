@@ -64,21 +64,21 @@ const char *parser_error_table[] = {
 Parser *
 init_parser(char *filename) {
 
-	Parser *p = (Parser *)calloc(1, sizeof(Parser));
+	Parser *p = calloc(1, sizeof(Parser));
 	p->fin = fopen(filename, "r");
 	check_fopen(p->fin);
 	/* p->fout = fopen("", "r"); */
 	/* check_fopen(p->fout); */
-	p->tl =	(TokenList *)calloc(1, sizeof(TokenList));
+	p->tl =	calloc(1, sizeof(TokenList));
 	return p;
 }
 
 void
 free_parser (Parser **p) {
 
-	free_token_list(p->tl);
-	fclose(p->fin);
-	/* fclose(p->fout); */
+	free_token_list((*p)->tl);
+	fclose((*p)->fin);
+	/* fclose((*p)->fout); */
 	free(*p);
 }
 
@@ -89,51 +89,42 @@ parse (Parser *p) {
 	// Might need to deep copy p->tl->head into another
 	// tokennode pointer in order to no "use up" the token
 
-	smpl_computation(&(p->tl->head), &ast);// ast mutator
+	Computation *c = smpl_computation(&(p->tl->head));
 	printf("Parsing Complete!\n");
 	return ast;
 }
 
 // computation =
 // "main" { varDecl } { funcDecl } "{" statSequence "}" "."
-void
-smpl_computation (TokenNode **tn,
-									Ast **ast) {
+Computation *
+smpl_computation (TokenNode **tn) {
 
-	VarDeclsList *vdl = init_var_decls_list();
-	FuncDeclsList *fdl = init_func_decls_list();
-	if ( token_type_is(MAIN, tn) ) {
+	Computation *comp = init_computation();
 
-		next_token(tn);
-		while ( token_type_is(VAR, tn) ||
-						token_type_is(ARRAY, tn) ) {
+	assert_token_type_is(MAIN, tn,
+											 COMPUTATION_NO_MAIN);
+	next_token(tn);
+	while ( token_type_is(VAR, tn) ||
+					token_type_is(ARRAY, tn) ) {
 
-			smpl_var_decl(tn, &vdl);// vdl mutator
-		}
-		while ( token_type_is(FUNCTION, tn) ||
-						token_type_is(VOID, tn) ) {
+		smpl_var_decl(tn, &c->vdl);// vdl mutator
+	}
+	while ( token_type_is(FUNCTION, tn) ||
+					token_type_is(VOID, tn) ) {
 
-			smpl_func_decl(tn, &fdl);// fdl mutator
-		}
-		if ( token_type_is(LBRACE, tn) ) {
-
-			next_token(tn);
-			smpl_stat_sequence(tn, ast);
-			if ( token_type_is(RBRACE, tn) ) {
-
-				next_token(tn);
-			} else { psr_err((*tn)->tkn->line,
-											 COMPUTATION_NO_RBRACE); }
-		} else { psr_err((*tn)->tkn->line,
-										 COMPUTATION_NO_LBRACE); }
-	} else { psr_err((*tn)->tkn->line,
-									 COMPUTATION_NO_MAIN); }
-
-	if ( token_type_is(PERIOD, tn) ) {
-
-		next_token(tn);
-	} else { psr_err((*tn)->tkn->line,
-									 COMPUTATION_NO_PERIOD); }
+		smpl_func_decl(tn, &c->fdl);// fdl mutator
+	}
+	assert_token_type_is(LBRACE, tn,
+											 COMPUTATION_NO_LBRACE);
+	next_token(tn);
+	smpl_stat_sequence(tn, &c->sl);// sl mutator
+	assert_token_type_is(RBRACE, tn,
+											 COMPUTATION_NO_RBRACE);
+	next_token(tn);
+	assert_token_type_is(PERIOD, tn,
+											 COMPUTATION_NO_PERIOD);
+	next_token(tn);
+	return comp;
 }
 
 // varDecl = typeDecl ident { "," ident } ";"
@@ -141,34 +132,27 @@ void
 smpl_var_decl (TokenNode **tn,
 							 VarDeclsList **vdl) {
 
-	VarDeclsListNode *vdln = init_var_decls_list_node();//calloc
-	smpl_type_decl(tn, &(vdln->dimens_list));// list mutator
-	// TODO: make this a util function b/c it's repeated
-	if ( token_type_is(IDENT, tn) ) {
-
+	VarDeclsListNode *vdln;
+	vdln = init_var_decls_list_node();//calloc
+	smpl_type_decl(tn,
+								 &(vdln->dimens_list));//list mutator
+	assert_token_type_is(IDENT, tn,
+											 VAR_DECL_NO_VAR_NAME);
+	push_str_list_data(&(vdln->idents_list),
+										 (*tn)->tkn->raw);// calloc
+	next_token(tn);
+	while ( token_type_is(COMMA, tn) ) {
+		next_token(tn);
+		assert_token_type_is(IDENT, tn,
+												 VAR_DECL_NO_VAR_NAME);
 		push_str_list_data(&(vdln->idents_list),
 											 (*tn)->tkn->raw);// calloc
 		next_token(tn);
-		while ( token_type_is(COMMA, tn) ) {
-			next_token(tn);
-			if ( token_type_is(IDENT, tn) ) {
-
-				push_str_list_data(&(vdln->idents_list),
-													 (*tn)->tkn->raw);// calloc
-				next_token(tn);
-			} else { psr_err((*tn)->tkn->line,
-											 VAR_DECL_NO_VAR_NAME); }
-		}
-	} else { psr_err((*tn)->tkn->line,
-									 VAR_DECL_NO_VAR_NAME); }
-
-	if ( token_type_is(SEMICOLON, tn) ) {
-
-		next_token(tn);
-	} else { psr_err((*tn)->tkn->line,
-									 VAR_DECL_NO_SEMICOLON); }
-
-	push_var_decl_list_node(vdl, vdln);
+	}
+	assert_token_type_is(SEMICOLON, tn,
+											 VAR_DECL_NO_SEMICOLON);
+	next_token(tn);
+	push_var_decls_list_node(vdl, vdln);
 }
 
 // typeDecl = "var" | "array" "[" number "]" { "[" number "]"}
@@ -182,30 +166,25 @@ smpl_type_decl (TokenNode **tn,
 
 	if ( token_type_is(VAR, tn) ) {
 
-		(*dimens_list)->head = NULL // i.e. a scalar
+		(*dimens_list)->head = NULL; // i.e. a scalar
 		next_token(tn);
 	} else if ( token_type_is(ARRAY, tn) ) {
 
 		next_token(tn);
 		do {
 
-			if ( token_type_is(LBRACKET, tn) ) {
-
+			assert_token_type_is(LBRACKET, tn,
+													 TYPE_DECL_NO_LBRACKET);
+			next_token(tn);
+			assert_token_type_is(NUMBER, tn,
+													 TYPE_DECL_NO_ARRAY_SIZE);
+			push_int_list_data(dimens_list,
+												 (*tn)->tkn->val);//calloc
+			next_token(tn);
+			assert_token_type_is(RBRACKET, tn,
+													 TYPE_DECL_NO_RBRACKET);
 				next_token(tn);
-				if ( token_type_is(NUMBER, tn) ) {
 
-					push_int_list_data(dimens_list,
-														 (*tn)->tkn->val);//calloc
-					next_token(tn);
-					if ( token_type_is(RBRACKET, tn) ) {
-
-						next_token(tn);
-					} else { psr_err((*tn)->tkn->line,
-													 TYPE_DECL_NO_RBRACKET); }
-				} else { psr_err((*tn)->tkn->line,
-												 TYPE_DECL_NO_ARRAY_SIZE); }
-			} else { psr_err((*tn)->tkn->line,
-											 TYPE_DECL_NO_LBRACKET); }
 		} while ( token_type_is(LBRACKET, tn) );
 
 	} else { psr_err((*tn)->tkn->line,
@@ -216,191 +195,191 @@ smpl_type_decl (TokenNode **tn,
 // [ "void" ] "function" ident formalParam ";" funcBody ";"
 void
 smpl_func_decl (TokenNode **tn,
-								List **fl) {
+								FuncDeclsList **fl) {
 
+	FuncDeclsListNode *fdln;
+	fdln = init_func_decls_list_node();//calloc
+	// No error because "void" is optional
 	if ( token_type_is(VOID, tn) ) {
-
-		next_token(tn); //TODO:does void change something in regs?
-	} // No error because "void" is optional
-	if ( token_type_is(FUNCTION, tn) ) {
-
+		fdln->is_void = true;
 		next_token(tn);
-		if ( token_type_is(IDENT, tn) ) {
-
-			next_token(tn);
-			smpl_formal_param(tn);
-			if ( token_type_is(SEMICOLON, tn) ) {
-
-				next_token(tn);
-				smpl_func_body(tn);
-				if ( token_type_is(SEMICOLON, tn) ) {
-
-					next_token(tn);
-				} else { psr_err((*tn)->tkn->line,
-												 FUNC_DECL_NO_SEMICOLON); }
-			} else { psr_err((*tn)->tkn->line,
-											 FUNC_DECL_NO_SEMICOLON); }
-		} else { psr_err((*tn)->tkn->line,
-										 FUNC_DECL_NO_FUNC_NAME);	}
-	} else { psr_err((*tn)->tkn->line, FUNC_DECL_NO_FUNCTION); }
+	}
+	assert_token_type_is(FUNCTION, tn,
+											 FUNC_DECL_NO_FUNCTION);
+	next_token(tn);
+	assert_token_type_is(IDENT, tn,
+											 FUNC_DECL_NO_FUNC_NAME);
+	set_fn_name(&fdln, tn);//fdln mutator
+	next_token(tn);
+	smpl_formal_param(tn, &fdln);//fdln mutator
+	assert_token_type_is(SEMICOLON, tn,
+											 FUNC_DECL_NO_SEMICOLON);
+	next_token(tn);
+	smpl_func_body(tn, &fdln);//fdln mutator
+	assert_token_type_is(SEMICOLON, tn,
+											 FUNC_DECL_NO_SEMICOLON);
+	next_token(tn);
+	push_func_decls_list_node(fdl, fdln);
 }
 
 // formalParam = "(" [ident { "," ident }] ")"
 void
-smpl_formal_param (TokenNode **tn) {
+smpl_formal_param (TokenNode **tn,
+									 FuncDeclsListNode **fdln) {
 
-	if ( token_type_is(LPAREN, tn) ) {
+	assert_token_type_is(LPAREN, tn,
+											 FORMAL_PARAM_NO_LPAREN);
+	next_token(tn);
+	if ( token_type_is(IDENT, tn) ) {
 
+		push_str_list_data((*fdln)->param_idents,
+											 (*tn)->tkn->raw);//fdln mutator
 		next_token(tn);
-		// TODO: make this a util function b/c it's repeated
-		// don't forget differing err types!
-		if ( token_type_is(IDENT, tn) ) {
+		while ( token_type_is(COMMA, tn) ) {
 
 			next_token(tn);
-			while ( token_type_is(COMMA, tn) ) {
-
-				next_token(tn);
-				if ( token_type_is(IDENT, tn) ) {
-
-					next_token(tn);
-				} else { psr_err((*tn)->tkn->line,
-												 FORMAL_PARAM_NO_VAR_NAME); }
-			}
-		} // No error b/c param's are optional
-		if ( token_type_is(RPAREN, tn) ) {
-
+			assert_token_type_is(IDENT, tn,
+													 FORMAL_PARAM_NO_VAR_NAME);
+			push_str_list_data((*fdln)->param_idents,
+												 (*tn)->tkn->raw);//fdln mutator
 			next_token(tn);
-		} else { psr_err((*tn)->tkn->line,
-										 FORMAL_PARAM_NO_RPAREN); }
-	} else { psr_err((*tn)->tkn->line,
-									 FORMAL_PARAM_NO_LPAREN); }
+		}
+	} // No error b/c param's are optional
+	assert_token_type_is(RPAREN, tn,
+											 FORMAL_PARAM_NO_RPAREN);
+	next_token(tn);
 }
 
 // funcBody = { varDecl } "{" [ statSequence ] "}"
 void
-smpl_func_body (TokenNode **tn) {
+smpl_func_body (TokenNode **tn,
+								FuncDeclsListNode **fdln) {
 
 	while ( token_type_is(VAR, tn) ||
 					token_type_is(ARRAY, tn) ) {
 
-		smpl_var_decl(tn);
+		smpl_var_decl(tn,
+									&(*fdln)->local_var_decls);//fdln mutator
 	}
-	if ( token_type_is(LBRACE, tn) ) {
-
-		next_token(tn);
-		smpl_stat_sequence(tn); // Stmt can be empty
-		if ( token_type_is(RBRACE, tn) ) {
-
-			next_token(tn);
-		} else { psr_err((*tn)->tkn->line, FUNC_BODY_NO_RBRACE); }
-	} else { psr_err((*tn)->tkn->line, FUNC_BODY_NO_LBRACE); }
+	assert_token_type_is(LBRACE, tn,
+											 FUNC_BODY_NO_LBRACE);
+	next_token(tn);
+	// Stmt can be empty
+	smpl_stat_sequence(tn, &(*fdln)->stmts);//fdln mutator
+	assert_token_type_is(RBRACE, tn,
+											 FUNC_BODY_NO_RBRACE);
+	next_token(tn);
 }
 
 // statSequence = statement { ";" statement } [ ";" ]
 void
 smpl_stat_sequence (TokenNode **tn,
-										Ast **ast) {
+										StmtsList **sl) {
 
-	Ast *stmt_subtree;
-	stmt_subtree = smpl_statement(tn);
-	(*ast)->push(stmt_subtree);
+	smpl_statement(tn, sl);
 	while ( token_type_is(SEMICOLON, tn) ) {
 
 		next_token(tn);
-		stmt_subtree = smpl_statement(tn);
-		(*ast)->push(stmt_subtree);
+		smpl_statement(tn, sl);
 	}
+	// No error b/c terminating ";"s are optional
 	if ( token_type_is(SEMICOLON, tn) ) {
 
 		next_token(tn);
-	} // No error b/c terminating ";"s are optional
+	}
 }
 
 // statement =
 // assignment | "void" funcCall | ifStatement |
 // whileStatement | returnStatement
-Ast *
-smpl_statement (TokenNode **tn) {
+void
+smpl_statement (TokenNode **tn,
+								StmtsList **sl) {
 
+	StmtsListNode *sln;
+	sln = init_stmts_list_node();//calloc
 	if ( token_type_is(LET, tn) ) {
 
-		smpl_assignment(tn);
-		// TODO: how to make sure the function is VOID?
+		smpl_assignment(tn, &sln);//sln mutator
 	} else if ( token_type_is(CALL, tn) ) {
 
-		smpl_func_call(tn);
+		smpl_func_call(tn, &sln);//sln mutator
 	} else if ( token_type_is(IF, tn) ) {
 
-		smpl_if_statement(tn);
+		smpl_if_statement(tn, &sln);//sln mutator
 	} else if ( token_type_is(WHILE, tn) ) {
 
-		smpl_while_statement(tn);
+		smpl_while_statement(tn, &sln);//sln mutator
 	} else if ( token_type_is(RETURN, tn) ) {
 
-		smpl_return_statement(tn);
+		smpl_return_statement(tn, &sln);//sln mutator
 	}
+	push_stmts_list_node(sl, sln);
 }
 
 // assignment = "let" designator "<-" expression
 void
-smpl_assignment (TokenNode **tn) {
+smpl_assignment (TokenNode **tn,
+								 StmtsListNode **sln) {
 
-	if ( token_type_is(LET, tn) ) {
-
-		next_token(tn);
-		smpl_designator(tn);
-		if ( token_type_is(LARROW, tn) ) {
-
-			next_token(tn);
-			smpl_expression(tn);
-		} else { psr_err((*tn)->tkn->line,
-										 ASSIGNMENT_NO_LARROW); }
-	} else { psr_err((*tn)->tkn->line, ASSIGNMENT_NO_LET); }
+	assert_token_type_is(LET, tn,
+											 ASSIGNMENT_NO_LET);
+	next_token(tn);
+	smpl_designator(tn, &(*sln)->lhs);
+	assert_token_type_is(LARROW, tn,
+											 ASSIGNMENT_NO_LARROW);
+	next_token(tn);
+	smpl_expression(tn);
 }
 
 // designator = ident{ "[" expression "]" }
 void
-smpl_designator (TokenNode **tn) {
+smpl_designator (TokenNode **tn,
+								 Designator **des) {
 
-	if ( token_type_is(IDENT, tn) ) {
+	assert_token_type_is(IDENT, tn,
+											 DESIGNATOR_NO_NAME_REFERENCE);
+	// mutator: adds var name to des
+	set_var_name(des, tn);
+	next_token(tn);
+	while ( token_type_is(LBRACKET, tn) ) {
 
 		next_token(tn);
-		while ( token_type_is(LBRACKET, tn) ) {
-
-			next_token(tn);
-			smpl_expression(tn);
-			if ( token_type_is(RBRACKET, tn) ) {
-
-				next_token(tn);
-			} else { psr_err((*tn)->tkn->line,
-											 DESIGNATOR_NO_RBRACKET); }
-		}
-	} else { psr_err((*tn)->tkn->line,
-									 DESIGNATOR_NO_NAME_REFERENCE); }
+		// mutator: appends exprsn to sln->let_node
+		push_result_list_data((*des)->indices,
+													smpl_expression(tn));
+		assert_token_type_is(RBRACKET, tn,
+												 DESIGNATOR_NO_RBRACKET);
+		next_token(tn);
+	}
 }
 
 // expression = term {("+" | "-") term}
-void
+Result
 smpl_expression (TokenNode **tn) {
 
-	smpl_term(tn); // this was 'x'
+	
+	smpl_term(tn, bo->opa);// op->opa mutator
 	while ( token_type_is(PLUS, tn) ||
 					token_type_is(MINUS, tn) ) {
-
+		
+		bo->operator = token_type_is(PLUS, tn) ? '+' : '-';
 		next_token(tn);
-		smpl_term(tn); // this was 'y'
+		smpl_term(tn, &op);// op->opb mutator
 	}
-	 // was 'x'
+	return bo->opa;
 }
 
 // term = factor { ("*" | "/") factor}
-Result
-smpl_term (TokenNode **tn) {
+Operand
+smpl_term (TokenNode **tn,
+					 BinOp **bo) {
 
 	smpl_factor(tn); // this was 'x'
 	while ( token_type_is(ASTERISK, tn) ||
 					token_type_is(SLASH, tn) ) {
-
+		
+		bo->operator = token_type_is(ASTERISK, tn) ? '*' : '/';
 		next_token(tn);
 		smpl_factor(tn);// this was 'y'
 	}
@@ -409,27 +388,25 @@ smpl_term (TokenNode **tn) {
 
 // factor = designator | number | "(" expression ")" | funcCall
 // NOTE: only "non-void" fns may be called here.
-Result
+void
 smpl_factor (TokenNode **tn) {
 
-	Result result;
+	//	Result result;
 	if ( token_type_is(IDENT, tn) ) {
 
-		set_result(&result, VARIABLE, tn);
+		//		set_result(&result, VARIABLE, tn);
 		smpl_designator(tn);
 	} else if ( token_type_is(NUMBER, tn) ) {
 
-		set_result(&result, CONSTANT, tn);
+		//		set_result(&result, CONSTANT, tn);
 		next_token(tn);
 
 	} else if ( token_type_is(LPAREN, tn) ) {
 
 		next_token(tn);
 		smpl_expression(tn); // was 'x'
-		if ( token_type_is(RPAREN, tn) ) {
-
-			next_token(tn);
-		} else { psr_err((*tn)->tkn->line, TERM_NO_RPAREN);	}
+		assert_token_type_is(RPAREN, tn, TERM_NO_RPAREN);
+		next_token(tn);
 		// Check 'non-void' func_call
 		// ie just uses 'call' with no 'void' in front
 		// TODO: might need to check that this function is
@@ -445,62 +422,50 @@ smpl_factor (TokenNode **tn) {
 // "call" ident [ "(" [expression { "," expression } ] ")" ]
 // fns without params don't need "()" but can have them!
 void
-smpl_func_call (TokenNode **tn) {
+smpl_func_call (TokenNode **tn,
+								StmtsListNode **sln) {
 
-	if ( token_type_is(CALL, tn) ) {
+	assert_token_type_is(CALL, tn, FUNC_CALL_NO_CALL);
+	next_token(tn);
+	assert_token_type_is(IDENT, tn,
+											 FUNC_CALL_NAME_REFERENCE);
+	next_token(tn);
+	// No error b/c "(" is optional
+	if ( token_type_is(LPAREN, tn) ) {
 
 		next_token(tn);
-		if ( token_type_is(IDENT, tn) ) {
+		smpl_expression(tn);
+		while ( token_type_is(COMMA, tn) ) {
 
-			next_token(tn);
-			if ( token_type_is(LPAREN, tn) ) {
-
-				next_token(tn);
-				smpl_expression(tn);
-				while ( token_type_is(COMMA, tn) ) {
-
-					smpl_expression(tn);
-				}
-				if ( token_type_is(RPAREN, tn) ) {
-
-					next_token(tn);
-				} else { psr_err((*tn)->tkn->line,
-												 FUNC_CALL_NO_RPAREN); }
-			} // No error b/c "(" is optional
-		} else { psr_err((*tn)->tkn->line,
-										 FUNC_CALL_NAME_REFERENCE); }
-	} else { psr_err((*tn)->tkn->line, FUNC_CALL_NO_CALL); }
+			smpl_expression(tn);
+		}
+		assert_token_type_is(RPAREN, tn,
+												 FUNC_CALL_NO_RPAREN);
+		next_token(tn);
+	}
 }
 
 // ifStatement =
 // "if" relation "then"
 // statSequence [ "else" statSequence ] "fi"
 void
-smpl_if_statement (TokenNode **tn) {
+smpl_if_statement (TokenNode **tn,
+									 StmtsListNode **sln) {
 
-	if ( token_type_is(IF, tn) ) {
+	assert_token_type_is(IF, tn, IF_STATEMENT_NO_IF);
+	next_token(tn);
+	smpl_relation(tn);
+	assert_token_type_is(THEN, tn, IF_STATEMENT_NO_THEN);
+	next_token(tn);
+	smpl_stat_sequence(tn);
+	// No error "else" is optional
+	if ( token_type_is(ELSE, tn) ) {
 
 		next_token(tn);
-		smpl_relation(tn);
-		if ( token_type_is(THEN, tn) ) {
-
-			next_token(tn);
-			smpl_stat_sequence(tn);
-			if ( token_type_is(ELSE, tn) ) {
-
-				next_token(tn);
-				smpl_stat_sequence(tn);
-			}
-
-			if ( token_type_is(FI, tn) ) {
-
-				next_token(tn);
-			} else { psr_err((*tn)->tkn->line,
-											 IF_STATEMENT_NO_FI); }
-		} else { psr_err((*tn)->tkn->line,
-										 IF_STATEMENT_NO_THEN); }
-	}	else { psr_err((*tn)->tkn->line,
-									 IF_STATEMENT_NO_IF); }
+		smpl_stat_sequence(tn);
+	}
+	assert_token_type_is(FI, tn, IF_STATEMENT_NO_FI);
+	next_token(tn);
 }
 
 // relation = expression relOp expression
@@ -516,43 +481,35 @@ smpl_relation (TokenNode **tn) {
 			 token_type_is(OP_GE, tn) ) {
 
 		next_token(tn);
-	} else { psr_err((*tn)->tkn->line, RELATION_NO_RELOP); }
-
+	} else {psr_err((*tn)->tkn->line, RELATION_NO_RELOP);}
 	smpl_expression(tn);
 }
 
 // whileStatement = "while" relation "do" StatSequence "od"
 void
-smpl_while_statement (TokenNode **tn) {
+smpl_while_statement (TokenNode **tn,
+											StmtsListNode **sln) {
 
-	if ( token_type_is(WHILE, tn) ) {
-
-		smpl_relation(tn);
-		if ( token_type_is(DO, tn) ) {
-
-			next_token(tn);
-			smpl_stat_sequence(tn);
-			if ( token_type_is(OD, tn) ) {
-
-				next_token(tn);
-			} else { psr_err((*tn)->tkn->line,
-											 WHILE_STATEMENT_NO_OD); }
-		} else { psr_err((*tn)->tkn->line,
-										 WHILE_STATEMENT_NO_DO); }
-	} else { psr_err((*tn)->tkn->line,
-									 WHILE_STATEMENT_NO_WHILE); }
+	assert_token_type_is(WHILE, tn,
+											 WHILE_STATEMENT_NO_WHILE);
+	smpl_relation(tn);
+	assert_token_type_is(DO, tn, WHILE_STATEMENT_NO_DO);
+	next_token(tn);
+	smpl_stat_sequence(tn);
+	assert_token_type_is(OD, tn,
+											 WHILE_STATEMENT_NO_OD);
+	next_token(tn);
 }
 
 // returnStatement = "return" [ expression ]
 void
-smpl_return_statement (TokenNode **tn) {
+smpl_return_statement (TokenNode **tn,
+											 StmtsListNode **sln) {
 
-	if ( token_type_is(RETURN, tn) ) {
-
-		next_token(tn);
-		smpl_expression(tn);
-	} else { psr_err((*tn)->tkn->line,
-									 RETURN_STATEMENT_NO_RETURN); }
+	assert_token_type_is(RETURN, tn,
+											 RETURN_STATEMENT_NO_RETURN);
+	next_token(tn);
+	smpl_expression(tn);
 }
 
 /* int */
@@ -584,8 +541,8 @@ psr_err (int line,
 }
 
 bool
-optional_token_type_is (TokenType type,
-												TokenNode **tn) {
+token_type_is (TokenType type,
+							 TokenNode **tn) {
 
 	if ( (*tn)->tkn->type == type ) {
 		return true;
@@ -594,9 +551,9 @@ optional_token_type_is (TokenType type,
 }
 
 void
-mandatory_token_type_is (TokenType type,
-												 TokenNode *tn,
-												 ParserError e) {
+assert_token_type_is (TokenType type,
+											TokenNode **tn,
+											ParserError e) {
 
 	if ( (*tn)->tkn->type == type ) {
 		return;

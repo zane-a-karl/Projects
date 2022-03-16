@@ -16,15 +16,15 @@ typedef struct Ast {
 Ast *
 init_ast ();
 
-void
-append_subtree (Ast **subtree,
-								Ast **ast);
+/* void */
+/* append_subtree (Ast **subtree, */
+/* 								Ast **ast); */
 
-void
-push_basic_block (BasicBlock *bb,
-									Ast **ast);
+/* void */
+/* push_basic_block (BasicBlock *bb, */
+/* 									Ast **ast); */
 
-void
-free_subtree (Ast **subtree);
+/* void */
+/* free_subtree (Ast **subtree); */
 
 #endif//_AST_H_

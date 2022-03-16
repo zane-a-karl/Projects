@@ -13,18 +13,23 @@
 #ifndef _PARSER_H_
 #define _PARSER_H_
 
-#include "../hdr/var_table.h"
-#include "../hdr/var_decls_list.h"
-#include "../hdr/int_list.h"
-#include "../hdr/str_list.h"
-
+#include "../hdr/utils.h"
 #include "../hdr/token.h"
 #include "../hdr/ast.h"
-#include "../hdr/basic_block.h"
-#include "../hdr/dlx.h"
-#include "../hdr/result.h"
+
+#include "../hdr/var_table.h"
+#include "../hdr/int_list.h"
+#include "../hdr/str_list.h"
+#include "../hdr/var_decls_list.h"
+#include "../hdr/func_decls_list.h"
+#include "../hdr/computation.h"
+
+//#include "../hdr/basic_block.h"
+//#include "../hdr/dlx.h"
+//#include "../hdr/result.h"
 
 #include <ctype.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -114,12 +119,11 @@ Ast *
 parse (Parser *p);
 
 void
-smpl_computation (TokenNode **tn,
-									Ast **ast);
+smpl_computation (TokenNode **tn);
 
 void
 smpl_var_decl (TokenNode **tn,
-							 StrList **vl);
+							 VarDeclsList **vl);
 
 void
 smpl_type_decl (TokenNode **tn,
@@ -127,60 +131,59 @@ smpl_type_decl (TokenNode **tn,
 
 void
 smpl_func_decl (TokenNode **tn,
-								StrList **fl);
+								FuncDeclsList **fl);
 
 void
-smpl_formal_param (TokenNode **tn);
+smpl_formal_param (TokenNode **tn,
+									 FuncDeclsListNode **fdln);
 
 void
-smpl_func_body (TokenNode **tn);
+smpl_func_body (TokenNode **tn,
+								FuncDeclsListNode **fdln);
 
 void
 smpl_stat_sequence (TokenNode **tn,
-										Ast **);
+										StmtsList **sl);
 
 void
 smpl_statement (TokenNode **tn,
-								Ast **subtree);
+								StmtsList **sl);
 
 void
 smpl_assignment (TokenNode **tn,
-								 Ast **);
+								 StmtsListNode **sln);
 
 void
 smpl_designator (TokenNode **tn,
-								 BasicBlock **bb);
+								 StmtsListNode **sln);
 
 void
-smpl_expression (TokenNode **tn,
-								 BasicBlock **bb);
+smpl_expression (TokenNode **tn);
 
 void
-smpl_term (TokenNode **tn,
-					 BasicBlock **bb);
+smpl_term (TokenNode **tn);
 
 void
-smpl_factor (TokenNode **tn,
-						 BasicBlock **bb);
+smpl_factor (TokenNode **tn);
 
 void
 smpl_func_call (TokenNode **tn,
-								Ast **);
+								StmtsListNode **sln);
 
 void
 smpl_if_statement (TokenNode **tn,
-									 Ast **);
+									 StmtsListNode **sln);
 
 void
 smpl_while_statement (TokenNode **tn,
-											Ast **);
+											StmtsListNode **sln);
 
 void
 smpl_relation (TokenNode **tn);
 
 void
 smpl_return_statement (TokenNode **tn,
-											 Ast **);
+											 StmtsListNode **sln);
 
 /* int */
 /* val (char *c); */
@@ -194,12 +197,12 @@ psr_err (int line,
 /* 				char *name); */
 
 bool
-optional_token_type_is (TokenType type,
-												TokenNode *tn);
+token_type_is (TokenType type,
+							 TokenNode **tn);
 
 void
-mandatory_token_type_is (TokenType type,
-												 TokenNode *tn,
-												 ParserError e);
+assert_token_type_is (TokenType type,
+											TokenNode **tn,
+											ParserError e);
 
 #endif // _PARSER_H_

@@ -17,21 +17,14 @@ init_var_decls_list_node () {
 																		sizeof(VarDeclsListNode));
 	vdln->dimens_list = init_int_list();
 	vdln->idents_list = init_str_list();
+	vdln->next = NULL;
 	return vdln;
 }
 
 void
 next_var_decls_list_node (VarDeclsListNode **vdln) {
 
-	(*vldn) = (*vldn)->next;
-}
-
-void
-clear_var_decls_list_node (VarDeclsListNode *vdln) {
-
-	clear_int_list_node(vdln->dimens_list);
-	clear_str_list_node(vdln->idents_list);
-	vdln->next = NULL;
+	(*vdln) = (*vdln)->next;
 }
 
 // assume new_node already calloc'd
@@ -54,7 +47,7 @@ void
 print_var_decls_list (VarDeclsList *vdl) {
 
 	int idx = 0;
-  for (VarDeclsListNode *i = sl->head;
+  for (VarDeclsListNode *i = vdl->head;
 			 i != NULL;
 			 i = i->next) {
 		
@@ -66,9 +59,9 @@ print_var_decls_list (VarDeclsList *vdl) {
 }
 
 void
-free_var_decls_list (VarDeclsList *vdl) {
+free_var_decls_list (VarDeclsList **vdl) {
 
-	VarDeclsListNode *cur = vdl->head;
+	VarDeclsListNode *cur = (*vdl)->head;
 	VarDeclsListNode *prv;
   while ( cur != NULL ) {
 		prv = cur;

@@ -28,14 +28,11 @@ void
 next_str_list_node (StrListNode **sln);
 
 void
-clear_str_list_node (StrListNode *sln);
-
-void
-push_str_list (StrList *sl,
+push_str_list (StrList **sl,
 							 StrList *new_sl);
 
 void
-push_str_list_node (StrList *sl,
+push_str_list_node (StrList **sl,
 										StrListNode *new_node);
 
 void
@@ -49,6 +46,6 @@ StrList *
 deep_copy_str_list (StrList *src_sl);
 
 void
-free_str_list (StrList *sl);
+free_str_list (StrList **sl);
 
 #endif//_STR_LIST_H_

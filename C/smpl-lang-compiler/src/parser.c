@@ -1,8 +1,3 @@
-// TODO: Have smpl functions output lists of "Instructions" that you can then stitch together
-// You might need to add TYPEs for the Basic Blocks like Andre did for classes.
-
-
-
 #include "../hdr/parser.h"
 
 // Global symbol lookup table.
@@ -41,6 +36,8 @@ const char *parser_error_table[] = {
 	"DESIGNATOR_NO_RBRACKET      : No closing array bracket",
 
 	"TERM_NO_RPAREN:  No closing parenthesis",
+
+	"FACTOR_UNK_TOKEN_FOUND: Discovered unexpected token",
 
 	"FUNC_CALL_NO_CALL       : No beginning 'call'",
 	"FUNC_CALL_NAME_REFERENCE: No fn name was specified",
@@ -89,13 +86,13 @@ parse (Parser *p) {
 	// Might need to deep copy p->tl->head into another
 	// tokennode pointer in order to no "use up" the token
 
-	Computation *c = smpl_computation(&(p->tl->head));
+	ast->root->comp = smpl_computation(&(p->tl->head));
 	printf("Parsing Complete!\n");
 	return ast;
 }
 
-// computation =
-// "main" { varDecl } { funcDecl } "{" statSequence "}" "."
+// computation = "main" { varDecl } { funcDecl }
+// "{" statSequence "}" "."
 Computation *
 smpl_computation (TokenNode **tn) {
 
@@ -107,17 +104,17 @@ smpl_computation (TokenNode **tn) {
 	while ( token_type_is(VAR, tn) ||
 					token_type_is(ARRAY, tn) ) {
 
-		smpl_var_decl(tn, &c->vdl);// vdl mutator
+		push_vdl_data(&c->var_decls, smpl_var_decl(tn));
 	}
 	while ( token_type_is(FUNCTION, tn) ||
 					token_type_is(VOID, tn) ) {
 
-		smpl_func_decl(tn, &c->fdl);// fdl mutator
+		push_fdl_data(&c->fn_decls, smpl_func_decl(tn));
 	}
 	assert_token_type_is(LBRACE, tn,
 											 COMPUTATION_NO_LBRACE);
 	next_token(tn);
-	smpl_stat_sequence(tn, &c->sl);// sl mutator
+	c->stmts = smpl_stat_sequence(tn);
 	assert_token_type_is(RBRACE, tn,
 											 COMPUTATION_NO_RBRACE);
 	next_token(tn);
@@ -128,45 +125,48 @@ smpl_computation (TokenNode **tn) {
 }
 
 // varDecl = typeDecl ident { "," ident } ";"
-void
-smpl_var_decl (TokenNode **tn,
-							 VarDeclsList **vdl) {
+VarDecl *
+smpl_var_decl (TokenNode **tn) {
 
-	VarDeclsListNode *vdln;
-	vdln = init_var_decls_list_node();//calloc
-	smpl_type_decl(tn,
-								 &(vdln->dimens_list));//list mutator
+	// New vd, num_list, ident_list calloc'd here
+	VarDecl *vd = init_vd();
+	// TODO: handle doulbe calloc dims here!
+	vd->dimensions = smpl_type_decl(tn);
 	assert_token_type_is(IDENT, tn,
 											 VAR_DECL_NO_VAR_NAME);
-	push_str_list_data(&(vdln->idents_list),
-										 (*tn)->tkn->raw);// calloc
+	// New ident_node calloc'd here
+	push_ident_list_data(&vd->identifiers,
+											 build_ident((*tn)->tkn->raw));
 	next_token(tn);
 	while ( token_type_is(COMMA, tn) ) {
 		next_token(tn);
 		assert_token_type_is(IDENT, tn,
 												 VAR_DECL_NO_VAR_NAME);
-		push_str_list_data(&(vdln->idents_list),
-											 (*tn)->tkn->raw);// calloc
+		// New ident_node calloc'd here
+		push_ident_list_data(&vd->identifiers,
+												 build_ident((*tn)->tkn->raw));
 		next_token(tn);
 	}
 	assert_token_type_is(SEMICOLON, tn,
 											 VAR_DECL_NO_SEMICOLON);
 	next_token(tn);
-	push_var_decls_list_node(vdl, vdln);
+	return vd;
 }
 
-// typeDecl = "var" | "array" "[" number "]" { "[" number "]"}
-// Note: we only have to handle integer types and their arrays
-// because of this we can have the parser return the list of
-// dimensions of the identifier. For scalars we would just
-// have an empty list, i.e. list->head = NULL.
-void
-smpl_type_decl (TokenNode **tn,
-								IntList **dimens_list) {
+// typeDecl = "var" |
+// "array" "[" number "]" { "[" number "]"}
+// Note: we only have to handle integer types and their
+//  arrays because of this we can have the parser return
+//  the list of dimensions of the identifier. For scalars
+//  we would just  have an empty list, i.e.
+//  list->head = NULL.
+NumList */*for the dimensionts list*/
+smpl_type_decl (TokenNode **tn) {
 
+	NumList *dims = init_num_list();
 	if ( token_type_is(VAR, tn) ) {
 
-		(*dimens_list)->head = NULL; // i.e. a scalar
+		dims->head = NULL; // i.e. a scalar
 		next_token(tn);
 	} else if ( token_type_is(ARRAY, tn) ) {
 
@@ -178,30 +178,33 @@ smpl_type_decl (TokenNode **tn,
 			next_token(tn);
 			assert_token_type_is(NUMBER, tn,
 													 TYPE_DECL_NO_ARRAY_SIZE);
-			push_int_list_data(dimens_list,
-												 (*tn)->tkn->val);//calloc
+			// New node calloc'd here
+			push_num_list_data(dims,
+												 build_num((*tn)->tkn->val));
 			next_token(tn);
 			assert_token_type_is(RBRACKET, tn,
 													 TYPE_DECL_NO_RBRACKET);
-				next_token(tn);
+			next_token(tn);
 
 		} while ( token_type_is(LBRACKET, tn) );
 
 	} else { psr_err((*tn)->tkn->line,
 									 TYPE_DECL_NO_TYPE);}
+	return dims;
 }
 
 // funcDecl =
-// [ "void" ] "function" ident formalParam ";" funcBody ";"
-void
-smpl_func_decl (TokenNode **tn,
-								FuncDeclsList **fl) {
+// [ "void" ] "function"
+// ident formalParam ";" funcBody ";"
+FuncDecl *
+smpl_func_decl (TokenNode **tn) {
 
-	FuncDeclsListNode *fdln;
-	fdln = init_func_decls_list_node();//calloc
+	// New fd, ident, ident_list, vdl, sl calloc'd here
+	FuncDecl *fd = init_fd();
 	// No error because "void" is optional
 	if ( token_type_is(VOID, tn) ) {
-		fdln->is_void = true;
+
+		fd->is_void = true;
 		next_token(tn);
 	}
 	assert_token_type_is(FUNCTION, tn,
@@ -209,144 +212,172 @@ smpl_func_decl (TokenNode **tn,
 	next_token(tn);
 	assert_token_type_is(IDENT, tn,
 											 FUNC_DECL_NO_FUNC_NAME);
-	set_fn_name(&fdln, tn);//fdln mutator
+	// This sets the fn name TODO: handle double calloc
+	fd->ident = build_ident((*tn)->tkn->raw);
 	next_token(tn);
-	smpl_formal_param(tn, &fdln);//fdln mutator
+	// TODO: handle double calloc
+	fd->params = smpl_formal_param(tn);
 	assert_token_type_is(SEMICOLON, tn,
 											 FUNC_DECL_NO_SEMICOLON);
 	next_token(tn);
-	smpl_func_body(tn, &fdln);//fdln mutator
+	// TODO: check if there's a double calloc here
+	FuncBody *fb   = smpl_func_body(tn);
+	fd->local_vars = fb->local_vars;
+	fd->stmts      = fb->stmts;
 	assert_token_type_is(SEMICOLON, tn,
 											 FUNC_DECL_NO_SEMICOLON);
 	next_token(tn);
-	push_func_decls_list_node(fdl, fdln);
+	return fd;
 }
 
 // formalParam = "(" [ident { "," ident }] ")"
-void
-smpl_formal_param (TokenNode **tn,
-									 FuncDeclsListNode **fdln) {
+IdentList * /*for the param list*/
+smpl_formal_param (TokenNode **tn) {
 
+	IdentList *params = init_ident_list();
 	assert_token_type_is(LPAREN, tn,
 											 FORMAL_PARAM_NO_LPAREN);
 	next_token(tn);
 	if ( token_type_is(IDENT, tn) ) {
 
-		push_str_list_data((*fdln)->param_idents,
-											 (*tn)->tkn->raw);//fdln mutator
+		// New ident_node calloc'd here
+		push_ident_list_data(&params,
+												 build_ident((*tn)->tkn->raw));
 		next_token(tn);
 		while ( token_type_is(COMMA, tn) ) {
 
 			next_token(tn);
 			assert_token_type_is(IDENT, tn,
 													 FORMAL_PARAM_NO_VAR_NAME);
-			push_str_list_data((*fdln)->param_idents,
-												 (*tn)->tkn->raw);//fdln mutator
+
+			// New ident_node calloc'd here
+			push_ident_list_data(&params,
+													 build_ident((*tn)->tkn->raw));
 			next_token(tn);
 		}
 	} // No error b/c param's are optional
 	assert_token_type_is(RPAREN, tn,
 											 FORMAL_PARAM_NO_RPAREN);
 	next_token(tn);
+	return params;
 }
 
 // funcBody = { varDecl } "{" [ statSequence ] "}"
-void
-smpl_func_body (TokenNode **tn,
-								FuncDeclsListNode **fdln) {
+FuncBody *
+smpl_func_body (TokenNode **tn) {
 
+	// new fb, vdl, sl calloc'd here
+	FuncBody *fb = init_func_body();
 	while ( token_type_is(VAR, tn) ||
 					token_type_is(ARRAY, tn) ) {
 
-		smpl_var_decl(tn,
-									&(*fdln)->local_var_decls);//fdln mutator
+		// new vdln calloc'd here
+		push_vdl_data(&fb->local_vars, smpl_var_decl(tn));
 	}
 	assert_token_type_is(LBRACE, tn,
 											 FUNC_BODY_NO_LBRACE);
 	next_token(tn);
 	// Stmt can be empty
-	smpl_stat_sequence(tn, &(*fdln)->stmts);//fdln mutator
+	// new sl calloc'd here TODO: check for double calloc
+	fd->stmts = smpl_stat_sequence(tn);
 	assert_token_type_is(RBRACE, tn,
 											 FUNC_BODY_NO_RBRACE);
 	next_token(tn);
+	return fb;
 }
 
 // statSequence = statement { ";" statement } [ ";" ]
-void
+StmtList *
 smpl_stat_sequence (TokenNode **tn,
-										StmtsList **sl) {
+										StmtList **sl) {
 
-	smpl_statement(tn, sl);
+	StmtList *sl = init_sl();
+	push_sl_data(&sl, smpl_statement(tn));
 	while ( token_type_is(SEMICOLON, tn) ) {
 
 		next_token(tn);
-		smpl_statement(tn, sl);
+		push_sl_data(&sl, smpl_statement(tn));
 	}
 	// No error b/c terminating ";"s are optional
 	if ( token_type_is(SEMICOLON, tn) ) {
 
 		next_token(tn);
 	}
+	return sl;
 }
 
 // statement =
 // assignment | "void" funcCall | ifStatement |
 // whileStatement | returnStatement
-void
+Stmt *
 smpl_statement (TokenNode **tn,
-								StmtsList **sl) {
+								StmtList **sl) {
 
-	StmtsListNode *sln;
-	sln = init_stmts_list_node();//calloc
+	// new stmt and assoc'd fields calloc'd here
+	Stmt *s = init_stmt();
 	if ( token_type_is(LET, tn) ) {
 
-		smpl_assignment(tn, &sln);//sln mutator
+		s->type = LET;
+		// new assignment stmt calloc'd here
+		s->assignment = smpl_assignment(tn);
 	} else if ( token_type_is(CALL, tn) ) {
 
-		smpl_func_call(tn, &sln);//sln mutator
+		s->type = CALL;
+		// new func call stmt calloc'd here
+		s->func_call = smpl_func_call(tn);
 	} else if ( token_type_is(IF, tn) ) {
 
-		smpl_if_statement(tn, &sln);//sln mutator
+		s->type = IF;
+		
+		s->if_stmt = smpl_if_statement(tn);
+		// new if stmt calloc'd here
 	} else if ( token_type_is(WHILE, tn) ) {
 
-		smpl_while_statement(tn, &sln);//sln mutator
+		s->type = WHILE;
+		// new while stmt calloc'd here
+		s->while_stmt = smpl_while_statement(tn);
 	} else if ( token_type_is(RETURN, tn) ) {
 
-		smpl_return_statement(tn, &sln);//sln mutator
+		s->type = RETURN;
+		// new return stmt calloc'd here
+		s->return_stmt = smpl_return_statement(tn);
 	}
-	push_stmts_list_node(sl, sln);
+	return stmt;
 }
 
 // assignment = "let" designator "<-" expression
-void
-smpl_assignment (TokenNode **tn,
-								 StmtsListNode **sln) {
+Assignment *
+smpl_assignment (TokenNode **tn) {
 
+	// new assgnmt, desig, result calloc'd here
+	Assignment *a = init_assignment();
 	assert_token_type_is(LET, tn,
 											 ASSIGNMENT_NO_LET);
 	next_token(tn);
-	smpl_designator(tn, &(*sln)->lhs);
+	a->lhs = smpl_designator(tn);
 	assert_token_type_is(LARROW, tn,
 											 ASSIGNMENT_NO_LARROW);
 	next_token(tn);
-	smpl_expression(tn);
+	a->rhs = smpl_expression(tn);
+	return a;
 }
 
 // designator = ident{ "[" expression "]" }
-void
-smpl_designator (TokenNode **tn,
-								 Designator **des) {
+Designator *
+smpl_designator (TokenNode **tn) {
 
+	// new des, ident, res_list calloc'd here
+	Designator *d = init_designator();
 	assert_token_type_is(IDENT, tn,
 											 DESIGNATOR_NO_NAME_REFERENCE);
-	// mutator: adds var name to des
-	set_var_name(des, tn);
+	// new ident calloc'd here TODO: double calloc?
+	build_ident(d->ident, (*tn)->tkn->raw);
 	next_token(tn);
 	while ( token_type_is(LBRACKET, tn) ) {
 
 		next_token(tn);
-		// mutator: appends exprsn to sln->let_node
-		push_result_list_data((*des)->indices,
+		// new res list node calloc'd here
+		push_result_list_data(&des->indices,
 													smpl_expression(tn));
 		assert_token_type_is(RBRACKET, tn,
 												 DESIGNATOR_NO_RBRACKET);
@@ -355,75 +386,78 @@ smpl_designator (TokenNode **tn,
 }
 
 // expression = term {("+" | "-") term}
-Result
+BinOp *
 smpl_expression (TokenNode **tn) {
 
-	
-	smpl_term(tn, bo->opa);// op->opa mutator
+	Result lhs, rhs;
+	char op;
+	lhs = smpl_term(tn);
 	while ( token_type_is(PLUS, tn) ||
 					token_type_is(MINUS, tn) ) {
 		
-		bo->operator = token_type_is(PLUS, tn) ? '+' : '-';
+		op = token_type_is(PLUS, tn) ? '+' : '-';
 		next_token(tn);
-		smpl_term(tn, &op);// op->opb mutator
+		rhs = smpl_term(tn);
+		// TODO: Do something with lhs and rhs and op
 	}
-	return bo->opa;
+	return lhs;
 }
 
 // term = factor { ("*" | "/") factor}
-Operand
-smpl_term (TokenNode **tn,
-					 BinOp **bo) {
+BinOp *
+smpl_term (TokenNode **tn) {
 
-	smpl_factor(tn); // this was 'x'
+	Result lhs, rhs;
+	char op;
+	lhs = smpl_factor(tn);
 	while ( token_type_is(ASTERISK, tn) ||
 					token_type_is(SLASH, tn) ) {
 		
-		bo->operator = token_type_is(ASTERISK, tn) ? '*' : '/';
+		op = token_type_is(ASTERISK, tn) ? '*' : '/';
 		next_token(tn);
-		smpl_factor(tn);// this was 'y'
+		rhs = smpl_factor(tn);
+		// TODO: Do something with lhs and rhs and op
 	}
-	 // was 'x'
+	return lhs;
 }
 
-// factor = designator | number | "(" expression ")" | funcCall
+// factor = designator | number | "(" expression ")" |
+// funcCall
 // NOTE: only "non-void" fns may be called here.
-void
+/*UnionOfDesignatorNumberExpressionFuncCall*/
 smpl_factor (TokenNode **tn) {
 
-	//	Result result;
+	Result lhs, rhs;
 	if ( token_type_is(IDENT, tn) ) {
 
 		//		set_result(&result, VARIABLE, tn);
 		smpl_designator(tn);
 	} else if ( token_type_is(NUMBER, tn) ) {
 
+		lhs.type   = CONSTANT;
+		lhs.result = (*tn)->tkn->val;
 		//		set_result(&result, CONSTANT, tn);
 		next_token(tn);
 
 	} else if ( token_type_is(LPAREN, tn) ) {
 
 		next_token(tn);
-		smpl_expression(tn); // was 'x'
+		lhs = smpl_expression(tn);
 		assert_token_type_is(RPAREN, tn, TERM_NO_RPAREN);
 		next_token(tn);
-		// Check 'non-void' func_call
-		// ie just uses 'call' with no 'void' in front
-		// TODO: might need to check that this function is
-		// somehow void via a lookup()!?
 	} else if ( token_type_is(CALL, tn) ) {
 
 		smpl_func_call(tn);
-	}
-	 // was x
+	} else { psr_err(tn, FACTOR_UNK_TOKEN_FOUND); }
+	return lhs;
 }
 
 // funcCall =
 // "call" ident [ "(" [expression { "," expression } ] ")" ]
 // fns without params don't need "()" but can have them!
-void
+FuncCall *
 smpl_func_call (TokenNode **tn,
-								StmtsListNode **sln) {
+								StmtListNode **sln) {
 
 	assert_token_type_is(CALL, tn, FUNC_CALL_NO_CALL);
 	next_token(tn);
@@ -448,9 +482,9 @@ smpl_func_call (TokenNode **tn,
 // ifStatement =
 // "if" relation "then"
 // statSequence [ "else" statSequence ] "fi"
-void
+IfStmt *
 smpl_if_statement (TokenNode **tn,
-									 StmtsListNode **sln) {
+									 StmtListNode **sln) {
 
 	assert_token_type_is(IF, tn, IF_STATEMENT_NO_IF);
 	next_token(tn);
@@ -469,7 +503,7 @@ smpl_if_statement (TokenNode **tn,
 }
 
 // relation = expression relOp expression
-void
+BinOp *
 smpl_relation (TokenNode **tn) {
 
 	smpl_expression(tn);
@@ -486,9 +520,9 @@ smpl_relation (TokenNode **tn) {
 }
 
 // whileStatement = "while" relation "do" StatSequence "od"
-void
+WhileStmt *
 smpl_while_statement (TokenNode **tn,
-											StmtsListNode **sln) {
+											StmtListNode **sln) {
 
 	assert_token_type_is(WHILE, tn,
 											 WHILE_STATEMENT_NO_WHILE);
@@ -502,9 +536,9 @@ smpl_while_statement (TokenNode **tn,
 }
 
 // returnStatement = "return" [ expression ]
-void
+ReturnStmt *
 smpl_return_statement (TokenNode **tn,
-											 StmtsListNode **sln) {
+											 StmtListNode **sln) {
 
 	assert_token_type_is(RETURN, tn,
 											 RETURN_STATEMENT_NO_RETURN);
@@ -532,10 +566,10 @@ smpl_return_statement (TokenNode **tn,
 /* } */
 
 void
-psr_err (int line,
+psr_err (TokenNode **tn,
 				 ParserError e) {
 
-	printf("Error found on line %i\n", line);
+	printf("Error found on line %i\n", (*tn)->tkn->line);
 	perror(parser_error_table[e]);
 	exit(1);
 }
@@ -558,5 +592,5 @@ assert_token_type_is (TokenType type,
 	if ( (*tn)->tkn->type == type ) {
 		return;
 	}
-	psr_err((*tn)->tkn->line, e);
+	psr_err(tn, e);
 }

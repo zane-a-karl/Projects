@@ -3,13 +3,9 @@
 BinOp *
 init_bin_op () {
 
-	BinOp *bo = calloc(1, sizeof(BinOp));
+	BinOp *bo    = calloc(1, sizeof(BinOp));
+	bo->opa      = init_result();
+	bo->operator = '\0';
+	bo->opb      = init_result();
 	return bo;
-}
-
-Operand *
-init_operand () {
-
-	Operand *opnd = calloc(1, sizeof(Operand));
-	return opnd;
 }

@@ -1,51 +1,67 @@
-#include "../hdr/func_decls_list.h"
+#include "../hdr/func_decl_list.h"
 
-FuncDeclsList *
-init_func_decls_list () {
+FuncDecl *
+init_fd () {
 
-	FuncDeclsList *fdl;
-	fdl = (FuncDeclsList *)calloc(1, sizeof(FuncDeclsList));
-	fdl->head = NULL;
+	FuncDecl *fd   = calloc(1, sizeof(FuncDecl));
+	fd->ident      = init_identifier();
+	fd->params     = init_identifier_list();
+	fd->local_vars = init_var_decl_list();
+	fd->stmts      = init_stmt_list();
+	fd->is_void    = false;
+	return fd;
+}
+
+FuncBody *
+init_func_body () {
+
+	FuncBody *fb   = calloc(1, sizeof(FuncBody));
+	fb->local_vars = init_vdl();
+	fb->stmts      = init_stmt_list();
+	return fb;
+}
+
+FuncDeclListNode *
+init_fdln () {
+
+	FuncDeclListNode *fdln;
+	fdln       = calloc(1, sizeof(FuncDeclListNode));
+	fdln->data = init_fd();
+	fdln->next = NULL;
+	return fdln;
+}
+
+FuncDeclList *
+init_fdl () {
+
+	FuncDeclList *fdl = calloc(1, sizeof(FuncDeclList));
+	fdl->head         = NULL;
 	return fdl;
 }
 
-FuncDeclsListNode *
-init_func_decls_list_node () {
+// assume data already calloc'd
+FuncDeclListNode *
+build_fdln (FuncDecl *data) {
 
-	FuncDeclsListNode *fdln;
-	fdln = (FuncDeclsListNode *)calloc(1,
-																		sizeof(FuncDeclsListNode));
-	fdln->is_void = false;
-	fdln->fn_name = (char *)calloc(MAX_VAR_NAME_LEN,
-																 sizeof(char));
-	fdln->param_idents = init_str_list();
-	fdln->local_var_decls = init_var_decls_list();
-	fdln->stmts = init_stmts_list();
+	FuncDeclListNode *fdln;
+	fdln       = calloc(1, sizeof(FuncDeclListNode));
+	fdln->data = data;
 	fdln->next = NULL;
 	return fdln;
 }
 
 void
-set_fn_name (FuncDeclsListNode **fdln,
-						 TokenNode **tn) {
-
-	for (int i = 0; i < MAX_VAR_NAME_LEN; ++i) {
-		(*fdln)->fn_name[i] = (*tn)->tkn->raw[i];
-	}
-}
-
-void
-next_func_decls_list_node (FuncDeclsListNode **fdln) {
+next_fdln (FuncDeclListNode **fdln) {
 
 	(*fdln) = (*fdln)->next;
 }
 
 // assume new_node already calloc'd
 void
-push_func_decls_list_node (FuncDeclsList **fdl,
-													FuncDeclsListNode *new_node) {
+push_fdln (FuncDeclList **fdl,
+					 FuncDeclListNode *new_node) {
 	
-	FuncDeclsListNode *i = (*fdl)->head;
+	FuncDeclListNode *i = (*fdl)->head;
 	if ( i == NULL ) {
 		(*fdl)->head = new_node;
 	} else {
@@ -56,11 +72,20 @@ push_func_decls_list_node (FuncDeclsList **fdl,
 	}
 }
 
+// assume new_data already calloc'd
 void
-print_func_decls_list (FuncDeclsList *fdl) {
+push_fdl_data (FuncDeclList **fdl,
+							 FuncDecl *new_data) {
+	
+	FuncDeclListNode *new_node = build_fdln(new_data);
+	push_fdln(fdl, new_node);
+}
+
+void
+print_fdl (FuncDeclList *fdl) {
 
 	int idx = 0;
-  for (FuncDeclsListNode *i = fdl->head;
+  for (FuncDeclListNode *i = fdl->head;
 			 i != NULL;
 			 i = i->next) {
 		
@@ -72,10 +97,10 @@ print_func_decls_list (FuncDeclsList *fdl) {
 }
 
 void
-free_func_decls_list (FuncDeclsList **fdl) {
+free_fdl (FuncDeclList **fdl) {
 
-	FuncDeclsListNode *cur = (*fdl)->head;
-	FuncDeclsListNode *prv;
+	FuncDeclListNode *cur = (*fdl)->head;
+	FuncDeclListNode *prv;
   while ( cur != NULL ) {
 		prv = cur;
 		cur=cur->next;

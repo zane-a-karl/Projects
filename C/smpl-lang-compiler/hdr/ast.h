@@ -1,12 +1,35 @@
 #ifndef _AST_H_
 #define _AST_H_
 
-#include "../hdr/int_list.h"
-#include "../hdr/str_list.h"
+#include "../hdr/computation.h"
+#include "../hdr/var_decl.h"
+#include "../hdr/number_list.h"
+#include "../hdr/func_decl.h"
+#include "../hdr/identifier_list.h"
+#include "../hdr/assignment.h"
+#include "../hdr/designator.h"
+#include "../hdr/bip_op.h"
+#include "../hdr/func_call.h"
+#include "../hdr/if_stmt.h"
+#include "../hdr/while_stmt.h"
+#include "../hdr/return_stmt.h"
 
 typedef struct AstNode {
-	char *data;
-	struct AstNode *children;
+	union {
+		Computation *comp;
+		VarDecl *var_decl;
+		Number *num;
+		FuncDecl *func_decl;
+		Identifier *ident;
+		Assignment *ass;
+		Designator *des;//formerly ArrayAccess *arr_acc;
+		BinOp *bin_op;
+		FuncCall *func_call;
+		IfStmt *if_stmt;
+		WhileStmt *while_stmt;
+		ReturnStmt *ret_stmt;
+	}
+	//	struct AstNode *children;
 } AstNode;
 
 typedef struct Ast {

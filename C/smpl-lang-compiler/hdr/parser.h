@@ -20,13 +20,14 @@
 #include "../hdr/var_table.h"
 #include "../hdr/int_list.h"
 #include "../hdr/str_list.h"
-#include "../hdr/var_decls_list.h"
-#include "../hdr/func_decls_list.h"
+#include "../hdr/var_decl_list.h"
+#include "../hdr/func_decl_list.h"
+#include "../hdr/stmt_list.h"
 #include "../hdr/computation.h"
 
 //#include "../hdr/basic_block.h"
 //#include "../hdr/dlx.h"
-//#include "../hdr/result.h"
+//#include "../hdr/result_list.h"
 
 #include <ctype.h>
 #include <stdbool.h>
@@ -89,6 +90,8 @@ typedef enum ParserError {
 	DESIGNATOR_NO_RBRACKET      ,// No closing array bracket
 
 	TERM_NO_RPAREN,// No closing parenthesis
+
+	FACTOR_UNK_TOKEN_FOUND,// Discovered unexpected token
 
 	FUNC_CALL_NO_CALL       ,// No beginning 'call'
 	FUNC_CALL_NAME_REFERENCE,// No fn name was specified
@@ -189,7 +192,7 @@ smpl_return_statement (TokenNode **tn,
 /* val (char *c); */
 
 void
-psr_err (int line,
+psr_err (TokenNode **tn,
 				 ParserError e);
 
 /* int */

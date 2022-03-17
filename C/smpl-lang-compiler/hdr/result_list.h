@@ -1,61 +1,62 @@
-#ifndef _RESULT_H_
-#define _RESULT_H_
+#ifndef _RESULT_LIST_H_
+#define _RESULT_LIST_H_
 
 typedef enum ResultType {
-	CONSTANT, REGISTER, VARIABLE
-} ResultType;
+	CONSTANT, REGISTER, VARIABLE, UNSET
+} ResType;
 
 // A struct to store the outcome of an individual
 // expression parse
 typedef struct Result {
-	ResultType type;
+	ResType type;
 	int result;// This could be an immediate value, an	
              //offset of a register, or an address of a
 	           //variable
-} Result;
+} Res;
 
 typedef struct ResultListNode {
-	Result *data;
-	ResultListNode *next;
-} ResultListNode;
+	Res *data;
+	struct ResultListNode *next;
+} ResListNode;
 
 typedef struct ResultList {
-	ResultListNode *head;
-} ResultList;
+	ResListNode *head;
+} ResList;
+
+Res *
+init_res ();
+
+ResListNode *
+init_res_list_node ();
+
+ResList *
+init_res_list ();
+
+Res *
+build_res (ResType t,
+					 int val);
+
+ResListNode *
+build_res_list_node (Res *data);
 
 void
-set_result (Result *r,
-						ResultType t,
-						TokenNode *tn);
-
-ResultList *
-init_result_list ();
-
-ResultListNode *
-init_result_list_node (Result *data);
+next_res_list_node (ResListNode **rln);
 
 void
-next_result_list_node (ResultListNode **rln);
+push_res_list_node (ResList **rl,
+										ResListNode *new_node);
 
 void
-push_result_list (ResultList **rl,
-									ResultList *new_rl);
+push_res_list_data (ResList **rl,
+										Res* new_data);
+
+ResList *
+deep_copy_res_list (ResList *src_rl);//calloc
 
 void
-push_result_list_node (ResultList **rl,
-											 ResultListNode *new_node);
+print_res_list (ResList *rl);
 
 void
-push_result_list_data (ResultList **rl,
-											 Result new_data);
+free_res_list (ResList **rl);
 
-ResultList *
-deep_copy_result_list (ResultList *src_rl);//calloc
-
-void
-prresult_result_list (ResultList *rl);
-
-void
-free_result_list (ResultList **rl);
-
-#endif//_RESULT_H_
+#endif//_RESULT_LIST_H_

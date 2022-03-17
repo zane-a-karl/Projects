@@ -1,13 +1,14 @@
 #ifndef _COMPUTATION_H_
 #define _COMPUTATION_H_
 
-#include "../hdr/var_decls_list.h"
-#include "../hdr/func_decls_list.h"
+#include "../hdr/stmt_list.h"
+#include "../hdr/var_decl_list.h"
+#include "../hdr/func_decl_list.h"
 
 typedef struct Computation {
-	VarDeclsList *vdl;
-	FuncDeclsList *fdl;
-	StmtsList *sl;
+	VarDeclList *var_decls;
+	FuncDeclList *fn_decls;
+	StmtList *stmts;
 } Computation;
 
 Computation *

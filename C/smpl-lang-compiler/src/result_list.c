@@ -1,14 +1,40 @@
 #include "../hdr/result_list.h"
 
-void
-set_result (Result *r,
-						ResultType t,
-						TokenNode *tn) {
+
+Res *
+init_res () {
+
+	Res *r    = calloc(1, sizeof(Res));
+	r->type   = UNSET;
+	r->result = 0;
+	return r;
+}
+
+ResListNode *
+init_res_list_node () {
+
+	ResListNode *rln = calloc(1, sizeof(ResListNode));
+	rln->data        = NULL;
+	rln->next        = NULL;
+	return rln;
+}
+
+ResList*
+init_res_list () {
+
+	ResList *rl = calloc(1, sizeof(ResList));
+	rl->head    = NULL;
+	return rl;
+}
+
+Res *
+build_res (ResType t,
+					 int val) {
 
 	r->type = t;
 	switch (t) {
 	case CONSTANT:
-		r->data = tn->tkn->val;
+		r->data = val;
 		break;
 	case REGISTER:// This should be the same as VARIABLE
 	case VARIABLE:
@@ -21,51 +47,29 @@ set_result (Result *r,
 	}
 }
 
-ResultList*
-init_result_list () {
+// assume data already calloc'd
+ResListNode *
+build_res_list_node (Res *data) {
 
-	ResultList *rl = calloc(1, sizeof(ResultList));
-	rl->head = NULL;
-	return rl;
-}
-
-ResultListNode *
-init_result_list_node (Result *data) {
-
-	ResultListNode *rln;
-	rln = calloc(1, sizeof(ResultListNode));
+	ResListNode *rln;
+	rln = calloc(1, sizeof(ResListNode));
 	rln->data = data;
 	rln->next = NULL;
 	return rln;
 }
 
 void
-next_result_list_node (ResultListNode **rln) {
+next_res_list_node (ResListNode **rln) {
 
 	(*rln) = (*rln)->next;
 }
 
-void
-push_result_list (ResultList **rl,
-									ResultList *new_rl) {
-
-	ResultListNode *i = (*rl)->head;
-	while (i->next != NULL) {
-		i = i->next;
-	}
-	i = new_rl->head;
-	while (i->next != NULL) {
-		push_result_list_data(rl, i->data);
-		i = i->next;
-	}
-}
-
 // assume new_node already calloc'd
 void
-push_result_list_node (ResultList **rl,
-											 ResultListNode *new_node) {
+push_res_list_node (ResList **rl,
+										ResListNode *new_node) {
 	
-	ResultListNode *i = (*rl)->head;
+	ResListNode *i = (*rl)->head;
 	if ( i == NULL ) {
 		(*rl)->head = new_node;
 	} else {
@@ -77,43 +81,42 @@ push_result_list_node (ResultList **rl,
 }
 
 void
-push_result_list_data (ResultList **rl,
-											 Result new_data) {
+push_res_list_data (ResList **rl,
+										Res *new_data) {
 	
-	ResultListNode *new_node =
-		init_result_list_node(new_data);//calloc
-	push_result_list_node(rl, new_node);
+	ResListNode *new_node = build_res_list_node(new_data);
+	push_res_list_node(rl, new_node);
 }
 
-ResultList *
-deep_copy_result_list (ResultList *src_rl) {//calloc
+ResList *
+deep_copy_res_list (ResList *src_rl) {//calloc
 
-	ResultList *dst_rl = init_result_list();
-	for (ResultListNode *i = src_rl->head;
+	ResList *dst_rl = init_res_list();
+	for (ResListNode *i = src_rl->head;
 			 i != NULL;
 			 i = i->next) {
-		push_result_list_data(&dst_rl, i->data);
+		push_res_list_data(&dst_rl, i->data);
 	}
 	return dst_rl;
 }
 
 void
-print_result_list (ResultList *rl) {
+print_res_list (ResList *rl) {
 
-	result idx = 0;
-  for (ResultListNode *i = rl->head;
+	res idx = 0;
+  for (ResListNode *i = rl->head;
 			 i != NULL;
 			 i = i->next) {
 
-    printf("node %d: data=%i\n", idx++, i->data->result);
+    printf("node %d: data=%i\n", idx++, i->data->res);
   }
 }
 
 void
-free_result_list (ResultList **rl) {
+free_res_list (ResList **rl) {
 
-	ResultListNode *cur = (*rl)->head;
-	ResultListNode *prv;
+	ResListNode *cur = (*rl)->head;
+	ResListNode *prv;
   while ( cur != NULL ) {
 		prv = cur;
 		cur = cur->next;

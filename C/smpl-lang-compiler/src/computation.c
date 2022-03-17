@@ -4,8 +4,8 @@ Computation *
 init_computation () {
 
 	Computation *c = calloc(1, sizeof(Computation));
-	c->var_decls   = init_var_decl_list();
-	c->func_decls  = init_func_decl_list();
-	c->stmts       = init_stmt_list();
+	c->var_decls   = init_vdl();
+	c->func_decls  = init_fdl();
+	c->stmts       = init_sl();
 	return c;
 }

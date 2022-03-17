@@ -17,9 +17,7 @@
 #include "../hdr/token.h"
 #include "../hdr/ast.h"
 
-#include "../hdr/var_table.h"
-#include "../hdr/int_list.h"
-#include "../hdr/str_list.h"
+//#include "../hdr/var_table.h"
 #include "../hdr/var_decl_list.h"
 #include "../hdr/func_decl_list.h"
 #include "../hdr/stmt_list.h"
@@ -89,9 +87,8 @@ typedef enum ParserError {
 	DESIGNATOR_NO_NAME_REFERENCE,// No var name was specified
 	DESIGNATOR_NO_RBRACKET      ,// No closing array bracket
 
-	TERM_NO_RPAREN,// No closing parenthesis
-
 	FACTOR_UNK_TOKEN_FOUND,// Discovered unexpected token
+	FACTOR_NO_RPAREN,      //No ')' to close expression
 
 	FUNC_CALL_NO_CALL       ,// No beginning 'call'
 	FUNC_CALL_NAME_REFERENCE,// No fn name was specified
@@ -121,72 +118,59 @@ free_parser (Parser **p);
 Ast *
 parse (Parser *p);
 
-void
+Computation *
 smpl_computation (TokenNode **tn);
 
-void
-smpl_var_decl (TokenNode **tn,
-							 VarDeclsList **vl);
+struct VarDecl *
+smpl_var_decl (TokenNode **tn);
 
-void
-smpl_type_decl (TokenNode **tn,
-								IntList **dl);
+NumList *
+smpl_type_decl (TokenNode **tn);
 
-void
-smpl_func_decl (TokenNode **tn,
-								FuncDeclsList **fl);
+struct FuncDecl *
+smpl_func_decl (TokenNode **tn);
 
-void
-smpl_formal_param (TokenNode **tn,
-									 FuncDeclsListNode **fdln);
+IdentList *
+smpl_formal_param (TokenNode **tn);
 
-void
-smpl_func_body (TokenNode **tn,
-								FuncDeclsListNode **fdln);
+FuncBody *
+smpl_func_body (TokenNode **tn);
 
-void
-smpl_stat_sequence (TokenNode **tn,
-										StmtsList **sl);
+StmtList *
+smpl_stat_sequence (TokenNode **tn);
 
-void
-smpl_statement (TokenNode **tn,
-								StmtsList **sl);
+Stmt *
+smpl_statement (TokenNode **tn);
 
-void
-smpl_assignment (TokenNode **tn,
-								 StmtsListNode **sln);
+Assignment *
+smpl_assignment (TokenNode **tn);
 
-void
-smpl_designator (TokenNode **tn,
-								 StmtsListNode **sln);
+Designator *
+smpl_designator (TokenNode **tn);
 
-void
+union Result *
 smpl_expression (TokenNode **tn);
 
-void
+union Result *
 smpl_term (TokenNode **tn);
 
-void
+union Result *
 smpl_factor (TokenNode **tn);
 
-void
-smpl_func_call (TokenNode **tn,
-								StmtsListNode **sln);
+FuncCall *
+smpl_func_call (TokenNode **tn);
 
-void
-smpl_if_statement (TokenNode **tn,
-									 StmtsListNode **sln);
-
-void
-smpl_while_statement (TokenNode **tn,
-											StmtsListNode **sln);
-
-void
+BinOp *
 smpl_relation (TokenNode **tn);
 
-void
-smpl_return_statement (TokenNode **tn,
-											 StmtsListNode **sln);
+IfStmt *
+smpl_if_statement (TokenNode **tn);
+
+WhileStmt *
+smpl_while_statement (TokenNode **tn);
+
+ReturnStmt *
+smpl_return_statement (TokenNode **tn);
 
 /* int */
 /* val (char *c); */

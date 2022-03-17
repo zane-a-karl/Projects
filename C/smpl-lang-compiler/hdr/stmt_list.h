@@ -6,19 +6,18 @@
 #include "../hdr/identifier_list.h"
 #include "../hdr/designator.h"
 #include "../hdr/result_list.h"
+#include "../hdr/assignment.h"
+#include "../hdr/if_stmt.h"
+#include "../hdr/while_stmt.h"
+#include "../hdr/return_stmt.h"
 
 #include <stdlib.h>
 
-typedef enum StmtType {
-	LET, CALL, IF, WHILE, RETURN, UNSET;
-} StmtType;
-
 typedef struct Stmt {
-	StmtType type;
 	Assignment *assignment;
 	FuncCall *func_call;
-	IfStmt *if_stmt;
-	WhileStmt *while_stmt;
+	struct IfStmt *if_stmt;
+	struct WhileStmt *while_stmt;
 	ReturnStmt *return_stmt;
 	struct StmtListNode *next;
 } Stmt;

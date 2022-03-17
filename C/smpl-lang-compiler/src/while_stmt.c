@@ -5,6 +5,6 @@ init_while_stmt () {
 
 	WhileStmt *ws = calloc(1, sizeof(WhileStmt));
 	ws->condition = init_bin_op();
-	ws->do_stmts  = init_stmt_list();
+	ws->do_stmts  = init_sl();
 	return ws;
 }

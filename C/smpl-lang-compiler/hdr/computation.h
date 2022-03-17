@@ -7,7 +7,7 @@
 
 typedef struct Computation {
 	VarDeclList *var_decls;
-	FuncDeclList *fn_decls;
+	FuncDeclList *func_decls;
 	StmtList *stmts;
 } Computation;
 

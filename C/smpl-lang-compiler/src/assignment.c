@@ -3,8 +3,8 @@
 Assignment *
 init_assignment () {
 
-	Assignment *asn = calloc(1, sizeof(Assignment));
-	asn->lhs        = init_designator();
-	asn->rhs        = init_result();
-	return asn;
+	Assignment *a = calloc(1, sizeof(Assignment));
+	a->lhs        = init_designator();
+	a->rhs        = init_res();
+	return a;
 }

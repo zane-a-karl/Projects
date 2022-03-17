@@ -1,18 +1,20 @@
 #ifndef _RESULT_LIST_H_
 #define _RESULT_LIST_H_
 
-typedef enum ResultType {
-	CONSTANT, REGISTER, VARIABLE, UNSET
-} ResType;
+// Do this to silence circular dependency
+typedef union Result Res;
 
-// A struct to store the outcome of an individual
-// expression parse
-typedef struct Result {
-	ResType type;
-	int result;// This could be an immediate value, an	
-             //offset of a register, or an address of a
-	           //variable
-} Res;
+#include "../hdr/number_list.h"
+#include "../hdr/bin_op.h"
+#include "../hdr/designator.h"
+#include "../hdr/func_call.h"
+
+union Result {
+	Designator *des;
+	Num *num;
+	BinOp *bin_op;
+	struct FuncCall *func_call;
+};
 
 typedef struct ResultListNode {
 	Res *data;
@@ -32,10 +34,6 @@ init_res_list_node ();
 ResList *
 init_res_list ();
 
-Res *
-build_res (ResType t,
-					 int val);
-
 ResListNode *
 build_res_list_node (Res *data);
 
@@ -49,9 +47,6 @@ push_res_list_node (ResList **rl,
 void
 push_res_list_data (ResList **rl,
 										Res* new_data);
-
-ResList *
-deep_copy_res_list (ResList *src_rl);//calloc
 
 void
 print_res_list (ResList *rl);

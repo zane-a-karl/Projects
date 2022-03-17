@@ -1,5 +1,5 @@
 #include "../hdr/utils.h"
-#include "../hdr/var_table.h"
+//#include "../hdr/var_table.h"
 #include "../hdr/token.h"
 #include "../hdr/lexer.h"
 #include "../hdr/parser.h"
@@ -9,7 +9,7 @@
 #include <stdlib.h>
 
 // Global symbol lookup table.
-VarTable *vt;
+//VarTable *vt;
 // Global var for basic block number
 int block_number;
 // Global var for ssa instruction number
@@ -20,7 +20,7 @@ main (int argc,
 			char *argv[]) {
 
 	// Allocate memory for the first listing in the var table
-	vt = alloc_var_table();
+	//vt = alloc_var_table();
 
 	Parser *p = init_parser(argv[1]);
 	p->tl = lex(p->fin);

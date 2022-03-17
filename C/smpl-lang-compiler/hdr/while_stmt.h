@@ -6,7 +6,7 @@
 
 typedef struct WhileStmt {
 	BinOp *condition;
-	StmtList *do_stmts;
+	struct StmtList *do_stmts;
 } WhileStmt;
 
 WhileStmt *

@@ -107,12 +107,12 @@ deep_copy_num_list (NumList *src_nl) {//calloc
 void
 print_num_list (NumList *nl) {
 
-	num idx = 0;
+	int idx = 0;
   for (NumListNode *i = nl->head;
 			 i != NULL;
 			 i = i->next) {
 
-    printf("node %d: data=%i\n", idx++, i->data);
+    printf("node %d: data=%i\n", idx++, i->data->val);
   }
 }
 

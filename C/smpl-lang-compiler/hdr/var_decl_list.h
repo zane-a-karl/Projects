@@ -12,7 +12,7 @@ typedef struct VarDecl {
 } Var_Decl;
 
 typedef struct VarDeclListNode {
-	VarDecl *data;
+	struct VarDecl *data;
 	struct VarDeclListNode *next;
 } VarDeclListNode;
 
@@ -20,7 +20,7 @@ typedef struct VarDeclList {
 	VarDeclListNode *head;
 } VarDeclList;
 
-VarDecl *
+struct VarDecl *
 init_vd ();
 
 VarDeclListNode *
@@ -30,7 +30,7 @@ VarDeclList *
 init_vdl ();
 
 VarDeclListNode *
-build_vdln (VarDecl *vd);
+build_vdln (struct VarDecl *vd);
 
 void
 next_vdln (VarDeclListNode **vdln);
@@ -41,7 +41,7 @@ push_vdln (VarDeclList **vdl,
 
 void
 push_vdl_data (VarDeclList **vdl,
-							 VarDecl *new_data);
+							 struct VarDecl *new_data);
 
 void
 print_vdl (VarDeclList *vdl);

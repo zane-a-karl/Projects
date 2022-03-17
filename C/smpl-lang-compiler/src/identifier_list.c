@@ -1,7 +1,7 @@
 #include "../hdr/identifier_list.h"
 
 Ident *
-init_identifier () {
+init_ident () {
 
 	Ident *id = calloc(1, sizeof(Ident));
 	id->name  = calloc(MAX_VAR_NAME_LEN, sizeof(char));
@@ -98,19 +98,12 @@ push_ident_list_data (IdentList **il,
 void
 print_ident_list (IdentList *il) {
 
-	int idx = 0;
-  for (IdentListNode *i = il->head; i != NULL; i=i->next) {
-    printf("node %d: data=\"%s\"\n", idx++, i->data);
+	//	int idx = 0;
+  for (IdentListNode *i = il->head;
+			 i != NULL;
+			 i = i->next) {
+		//    printf("node %d: data=\"%s\"\n", idx++, i->data);
   }
-}
-
-IdentList *
-deep_copy_ident_list (IdentList *src_il) {//calloc
-
-	IdentList *dst_il = init_ident_list();
-	for (IdentListNode *i = src_il->head; i != NULL; i=i->next) {
-		push_ident_list_data(&dst_il, i->data);
-	}
 }
 
 void

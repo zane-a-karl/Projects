@@ -14,10 +14,10 @@
 #endif//MAX_VAR_NAME_LEN
 
 typedef struct FuncDecl {
-	Identifier *ident;
-	IdentifierList *params;
+	struct Ident *ident;
+	struct IdentList *params;
 	VarDeclList *local_vars;
-	StmtList *stmts;
+	struct StmtList *stmts;
 	bool is_void;
 } Func_Decl;
 
@@ -25,11 +25,11 @@ typedef struct FuncDecl {
 // smpl_func_body
 typedef struct FuncBody {
 	VarDeclList *local_vars;
-	StmtList *stmts;
+	struct StmtList *stmts;
 } FuncBody;
 
 typedef struct FuncDeclListNode {
-	FuncDecl *data;
+	struct FuncDecl *data;
 	struct FuncDeclListNode *next;
 } FuncDeclListNode;
 
@@ -37,7 +37,7 @@ typedef struct FuncDeclList {
 	FuncDeclListNode *head;
 } FuncDeclList;
 
-FuncDecl *
+struct FuncDecl *
 init_fd ();
 
 FuncBody *
@@ -47,18 +47,18 @@ FuncDeclList *
 init_fdl ();
 
 FuncDeclListNode *
-build_fdln (FuncDecl *data);
+build_fdln (struct FuncDecl *data);
 
 void
 next_fdln (FuncDeclListNode **fdln);
 
 void
 push_fdln (FuncDeclList **fdl,
-													FuncDeclListNode *new_node);
+					 FuncDeclListNode *new_node);
 
 void
 push_fdl_data (FuncDeclList **fdl,
-													FuncDecl new_data);
+							 struct FuncDecl *new_data);
 
 void
 print_fdl (FuncDeclList *fdl);

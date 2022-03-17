@@ -6,7 +6,10 @@
 
 typedef struct Assignment {
 	Designator *lhs;
-	Result *rhs
+	union Result *rhs;
 } Assignment;
+
+Assignment *
+init_assignment ();
 
 #endif//_ASSIGNMENT_H_

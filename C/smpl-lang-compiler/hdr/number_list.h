@@ -46,7 +46,7 @@ push_num_list_node (NumList **nl,
 
 void
 push_num_list_data (NumList **nl,
-										int new_data);
+										Num *new_data);
 
 NumList *
 deep_copy_num_list (NumList *src_nl);//calloc

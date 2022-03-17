@@ -1,16 +1,16 @@
 #include "../hdr/var_decl_list.h"
 
-VarDecl *
+struct VarDecl *
 init_vd () {
 
-	VarDecl *vd     = calloc(1, sizeof(VarDecl));
-	vd->dimensions  = init_number_list();
-	vd->identifiers = init_identifier_list();
+	struct VarDecl *vd = calloc(1, sizeof(struct VarDecl));
+	vd->dimensions  = init_num_list();
+	vd->identifiers = init_ident_list();
 	return vd;
 }
 
 VarDeclListNode *
-init_vldn () {
+init_vdln () {
 
 	VarDeclListNode *vdln;
 	vdln       = calloc(1, sizeof(VarDeclListNode));
@@ -29,7 +29,7 @@ init_vdl () {
 
 // assume data already calloc'd
 VarDeclListNode *
-build_vldn (VarDecl *data) {
+build_vdln (struct VarDecl *data) {
 
 	VarDeclListNode *vdln;
 	vdln       = calloc(1, sizeof(VarDeclListNode));
@@ -39,14 +39,14 @@ build_vldn (VarDecl *data) {
 }
 
 void
-next_vldn (VarDeclListNode **vdln) {
+next_vdln (VarDeclListNode **vdln) {
 
 	(*vdln) = (*vdln)->next;
 }
 
 // assume new_node already calloc'd
 void
-push_vldn (VarDeclList **vdl,
+push_vdln (VarDeclList **vdl,
 					 VarDeclListNode *new_node) {
 	
 	VarDeclListNode *i = (*vdl)->head;
@@ -63,7 +63,7 @@ push_vldn (VarDeclList **vdl,
 // assume new_data already calloc'd
 void
 push_vdl_data (VarDeclList **vdl,
-							 VarDecl *new_data) {
+							 struct VarDecl *new_data) {
 	
 	VarDeclListNode *new_node = build_vdln(new_data);
 	push_vdln(vdl, new_node);
@@ -78,9 +78,9 @@ print_vdl (VarDeclList *vdl) {
 			 i = i->next) {
 		
 		printf("dimens[%i]:", idx);
-		print_int_list(i->dimens_list);
+		print_num_list(i->data->dimensions);
 		printf("idents[%i]:", idx);
-		print_str_list(i->idents_list);
+		print_ident_list(i->data->identifiers);
   }
 }
 
@@ -92,8 +92,8 @@ free_vdl (VarDeclList **vdl) {
   while ( cur != NULL ) {
 		prv = cur;
 		cur=cur->next;
-		free_int_list(prv->dimens_list);
-		free_str_list(prv->idents_list);
+		free_num_list(&prv->data->dimensions);
+		free_ident_list(&prv->data->identifiers);
 		free(prv);
 	}
 }

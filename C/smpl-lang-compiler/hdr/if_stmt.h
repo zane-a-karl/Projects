@@ -6,8 +6,8 @@
 
 typedef struct IfStmt {
 	BinOp *condition;
-	StmtList *then_stmts;
-	StmtList *else_stmts;
+	struct StmtList *then_stmts;
+	struct StmtList *else_stmts;
 } IfStmt;
 
 IfStmt *

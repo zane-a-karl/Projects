@@ -4,7 +4,7 @@
 #include "../hdr/result_list.h"
 
 typedef struct ReturnStmt {
-	ResultList *ret_val;
+	union Result *ret_val;
 } ReturnStmt;
 
 ReturnStmt *

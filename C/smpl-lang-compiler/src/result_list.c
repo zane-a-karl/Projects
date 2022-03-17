@@ -4,9 +4,7 @@
 Res *
 init_res () {
 
-	Res *r    = calloc(1, sizeof(Res));
-	r->type   = UNSET;
-	r->result = 0;
+	Res *r = calloc(1, sizeof(Res));
 	return r;
 }
 
@@ -25,26 +23,6 @@ init_res_list () {
 	ResList *rl = calloc(1, sizeof(ResList));
 	rl->head    = NULL;
 	return rl;
-}
-
-Res *
-build_res (ResType t,
-					 int val) {
-
-	r->type = t;
-	switch (t) {
-	case CONSTANT:
-		r->data = val;
-		break;
-	case REGISTER:// This should be the same as VARIABLE
-	case VARIABLE:
-		r->data = lookup(tn->tkn->raw_tkn);
-		break;
-	default:
-		perror("Infeasible result");
-		exit(1);
-		break;
-	}
 }
 
 // assume data already calloc'd
@@ -88,27 +66,15 @@ push_res_list_data (ResList **rl,
 	push_res_list_node(rl, new_node);
 }
 
-ResList *
-deep_copy_res_list (ResList *src_rl) {//calloc
-
-	ResList *dst_rl = init_res_list();
-	for (ResListNode *i = src_rl->head;
-			 i != NULL;
-			 i = i->next) {
-		push_res_list_data(&dst_rl, i->data);
-	}
-	return dst_rl;
-}
-
 void
 print_res_list (ResList *rl) {
 
-	res idx = 0;
+	//	int idx = 0;
   for (ResListNode *i = rl->head;
 			 i != NULL;
 			 i = i->next) {
 
-    printf("node %d: data=%i\n", idx++, i->data->res);
+    //printf("node %d: data=%i\n", idx++, i->data->res);
   }
 }
 

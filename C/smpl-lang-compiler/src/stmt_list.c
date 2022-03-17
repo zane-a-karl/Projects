@@ -4,7 +4,6 @@ Stmt *
 init_stmt () {
 
 	Stmt *s        = calloc(1, sizeof(Stmt));
-	s->type        = UNSET;
 	s->assignment  = init_assignment();
 	s->func_call   = init_func_call();
 	s->if_stmt     = init_if_stmt();
@@ -37,7 +36,7 @@ StmtListNode *
 build_sln (Stmt *data) {
 
 	StmtListNode *sln = calloc(1, sizeof(StmtListNode));
-	sln->data         = data
+	sln->data         = data;
 	sln->next         = NULL;
 	return sln;
 }
@@ -70,13 +69,13 @@ push_sl_data (StmtList **sl,
 							Stmt *new_data) {
 	
 	StmtListNode *new_node = build_sln(new_data);
-	push_vdln(sl, new_node);
+	push_sln(sl, new_node);
 }
 
 void
 print_sl (StmtList *sl) {
 
-	int idx = 0;
+	//	int idx = 0;
   for (StmtListNode *i = sl->head;
 			 i != NULL;
 			 i = i->next) {

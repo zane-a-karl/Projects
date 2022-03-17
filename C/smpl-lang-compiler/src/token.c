@@ -13,9 +13,9 @@ const char *possible_symbols[] = {
 Token *
 init_token () {
 
-	Token *t = (Token *)calloc(1, sizeof(Token));
+	Token *t = calloc(1, sizeof(Token));
 	t->type = 0;
-	t->raw_tkn = (char *)calloc(MAX_PROG_LINE_LEN, sizeof(char));
+	t->raw = calloc(MAX_PROG_LINE_LEN, sizeof(char));
 	t->val = 0;
 	t->line = 0;
 	return t;
@@ -24,8 +24,7 @@ init_token () {
 TokenNode *
 init_token_node (Token *t) {
 
-	TokenNode *tn = (TokenNode *)calloc(1,
-																			sizeof(TokenNode));
+	TokenNode *tn = calloc(1,	sizeof(TokenNode));
 	tn->tkn = t;
 	tn->next = NULL;
 	return tn;
@@ -41,8 +40,7 @@ void
 clear_token_node (TokenNode *tn) {
 
 	tn->tkn->type    = 0;
-	tn->tkn->raw_tkn = calloc(MAX_PROG_LINE_LEN,
-														sizeof(char));
+	tn->tkn->raw = calloc(MAX_PROG_LINE_LEN, sizeof(char));
 	tn->tkn->val     = 0;
 	tn->tkn->line    = 0;
 	tn->next = NULL;
@@ -71,7 +69,7 @@ print_token_list (TokenList *tl) {
     printf("Tkn %d: type=%d, raw=\"%s\", val=%i, line=%i\n",
            idx++,
            i->tkn->type,
-           i->tkn->raw_tkn,
+           i->tkn->raw,
            i->tkn->val,
            i->tkn->line);
   }
@@ -103,7 +101,7 @@ create_alnum_token (Token *t,
 												 "^[0-9]+$",
 												 REG_EXTENDED);
 	check_regex_compilation(rv_number);
-	strncpy(t->raw_tkn, buf, MAX_PROG_LINE_LEN);
+	strncpy(t->raw, buf, MAX_PROG_LINE_LEN);
 
 	t->line = line;
 
@@ -152,7 +150,7 @@ create_symbol_token (Token *t,
 										 char *buf,
 										 int line) {
 
-	strncpy(t->raw_tkn, buf, MAX_PROG_LINE_LEN);
+	strncpy(t->raw, buf, MAX_PROG_LINE_LEN);
 
 	t->line = line;
 

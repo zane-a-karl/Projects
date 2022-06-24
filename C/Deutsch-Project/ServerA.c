@@ -12,7 +12,7 @@ int main (int argc,
   struct addrinfo sock_preferences;
   struct addrinfo *possible_cnntns;
   struct sockaddr_storage aws_addr;
-  socklen_t aws_addr_len;
+  socklen_t aws_addr_len = sizeof(struct sockaddr);
 
   check_number_of_args(argc);
   set_sock_preferences(&sock_preferences);

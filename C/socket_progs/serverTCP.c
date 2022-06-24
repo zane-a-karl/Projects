@@ -96,7 +96,7 @@ int main (int argc, char **argv)
   }
 
   printf("server: waiting for connections...\n");
-  while(1) { // main accept() loop
+  while (1) { // main accept() loop
     sin_size = sizeof (their_addr);
     if ( (new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size) ) == -1 ) {
       perror("accept");
@@ -109,9 +109,9 @@ int main (int argc, char **argv)
     if ( !fork() ) { // this is the child process
       close(sockfd); // child doesn't need the listener
       if (send(new_fd, "Hello, world!", 13, 0) == -1) {
-	perror("send");
-	close(new_fd);
-	exit(0);
+				perror("send");
+				close(new_fd);
+				exit(0);
       }
     }
     close(new_fd); // parent doesn't need this.

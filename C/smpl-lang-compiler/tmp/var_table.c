@@ -14,7 +14,7 @@ init_var_node_key (VarNode **vn,
 									 char *var_name) {
 
 	for (int i = 0; i < MAX_VAR_NAME_LEN; ++i) {
-		*vn->key[i] = var_name[i];
+		(*vn)->key[i] = var_name[i];
 	}
 }
 
@@ -30,7 +30,7 @@ alloc_var_table () {
 // the TokenList
 void
 push_var_node (VarTable *vt,
-							 char *var_name) {
+							 VarNode *var_name) {
 
 	VarNode *new_vn = alloc_var_node();
 	init_var_node_key(&new_vn, var_name);

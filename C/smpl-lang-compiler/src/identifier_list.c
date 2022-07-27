@@ -1,82 +1,38 @@
 #include "../hdr/identifier_list.h"
 
 Ident *
-init_ident () {
-
-	Ident *id = calloc(1, sizeof(Ident));
-	id->name  = calloc(MAX_VAR_NAME_LEN, sizeof(char));
-	return id;
+new_ident ()
+{
+	Ident *ident = calloc(1, sizeof(Ident));
+	ident->name  = calloc(MAX_VAR_NAME_LEN, sizeof(char));
+	return ident;
 }
 
-IdentListNode *
-init_ident_list_node () {
-
-	IdentListNode *iln;
-	iln       = calloc(1, sizeof(IdentListNode));
-	iln->data = calloc(1, sizeof(Ident));
-	iln->next = NULL;
-	return iln;
+IdentNode *
+new_ident_node (Ident *ident)
+{
+	IdentNode *in = calloc(1, sizeof(IdentNode));
+	in->data      = ident;
+	in->next      = NULL;
+	return in;
 }
 
 IdentList *
-init_ident_list () {
-
+new_ident_list ()
+{
 	IdentList *il = calloc(1, sizeof(IdentList));
-	il->head = NULL;
+	il->head      = NULL;
 	return il;
-}
-
-Ident *
-build_ident (char *name) {
-
-	Ident *id = calloc(1, sizeof(Ident));
-	id->name  = calloc(MAX_VAR_NAME_LEN, sizeof(char));
-	for (int i = 0; i < MAX_VAR_NAME_LEN; ++i) {
-		id->name[i] = name[i];
-	}
-	return id;
-}
-
-// assume data already calloc'd
-IdentListNode *
-build_ident_list_node (Ident *data) {
-
-	IdentListNode *iln;
-	iln       = calloc(1, sizeof(IdentListNode));
-	iln->data = data;
-	iln->next = NULL;
-	return iln;
-}
-
-void
-next_ident_list_node (IdentListNode **iln) {
-
-	(*iln) = (*iln)->next;
-}
-
-void
-push_ident_list (IdentList **il,
-								 IdentList *new_il) {
-
-	IdentListNode *i = (*il)->head;
-	while (i->next != NULL) {
-		i = i->next;
-	}
-	i = new_il->head;
-	while (i->next != NULL) {
-		push_ident_list_data(il, i->data);
-		i = i->next;
-	}
 }
 
 // assume new_node already calloc'd
 void
-push_ident_list_node (IdentList **il,
-											IdentListNode *new_node) {
-
-	IdentListNode *i = (*il)->head;
+push_ident_node (IdentList *il,
+								 IdentNode *new_node)
+{
+	IdentNode *i = il->head;
 	if ( i == NULL ) {
-		(*il)->head = new_node;
+		il->head = new_node;
 	} else {
 		while ( i->next != NULL ) {
 			i = i->next;
@@ -85,21 +41,19 @@ push_ident_list_node (IdentList **il,
 	}
 }
 
-// assume new_data already calloc'd
+// assume `data` already calloc'd
 void
-push_ident_list_data (IdentList **il,
-											Ident *new_data) {
-
-	IdentListNode *new_node;
-	new_node = build_ident_list_node(new_data);
-	push_ident_list_node(il, new_node);
+push_ident (IdentList *il,
+						Ident *data)
+{
+	push_ident_node(il, new_ident_node(data));
 }
 
 void
-print_ident_list (IdentList *il) {
-
+print_ident_list (IdentList *il)
+{
 	//	int idx = 0;
-  for (IdentListNode *i = il->head;
+  for (IdentNode *i = il->head;
 			 i != NULL;
 			 i = i->next) {
 		//    printf("node %d: data=\"%s\"\n", idx++, i->data);
@@ -107,10 +61,10 @@ print_ident_list (IdentList *il) {
 }
 
 void
-free_ident_list (IdentList **il) {
-
-	IdentListNode *cur = (*il)->head;
-	IdentListNode *prv;
+free_ident_list (IdentList **il)
+{
+	IdentNode *cur = (*il)->head;
+	IdentNode *prv;
   while ( cur != NULL ) {
 		prv = cur;
 		cur=cur->next;

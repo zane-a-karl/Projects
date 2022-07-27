@@ -5,6 +5,7 @@
 #include "../hdr/parser.h"
 #include "../hdr/ast.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -17,19 +18,21 @@ int ssa_number;
 
 int
 main (int argc,
-			char *argv[]) {
-
+			char *argv[])
+{
 	// Allocate memory for the first listing in the var table
 	//vt = alloc_var_table();
+	assert(argc == 2);
 
-	Parser *p = init_parser(argv[1]);
-	p->tl = lex(p->fin);
-	/* print_token_list(p->tl); */
+	// Allocates heap memory for parser
+	Parser *psr = new_parser(argv[1]);
 
-	Ast *ast = parse(p);// calloc'd here
+	// Allocates heap memory for ast
+	Ast *ast = parse(psr);
 
 	// Free heap memory
-	free_parser(&p);
+	free_parser(&psr);
+	//	free_ast(&ast);
 
 	return 0;
 }

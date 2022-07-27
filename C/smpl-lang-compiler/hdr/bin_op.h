@@ -7,12 +7,12 @@ typedef struct BinaryOp BinOp;
 #include "../hdr/result_list.h"
 
 struct BinaryOp {
-	union Result *lhs;
+	struct Result *lhs;
 	char *op;
-	union Result *rhs;
+	struct Result *rhs;
 };
 
 BinOp *
-init_bin_op ();
+new_bin_op ();
 
 #endif//_BIN_OP_H_

@@ -10,15 +10,28 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef MAX_PROG_LINE_LEN
-#define MAX_PROG_LINE_LEN 256
-#endif//MAX_PROG_LINE_LEN
+#ifndef MAX_TKN_LEN
+#define MAX_TKN_LEN 64
+#endif//MAX_TKN_LEN
 
-TokenList *
-lex (FILE *fin);
+typedef struct Lexer {
+	FILE *fin;
+	TokenList *tl;
+	char buf[MAX_TKN_LEN];
+	int pos;     // current position within `buf`
+	int tkn_num; // total # of tkns in list or current tkn #
+	int line;    // Within the file we're currently on
+	int col;     // Within the file we're currently on
+} Lexer;
 
-/* void */
-/* tokenize (FILE *fin); */
+Lexer *
+new_lexer (char *input_filename);
+
+void
+free_lexer (Lexer **lxr);
+
+TokenNode *
+lex_next_tkn (Lexer *lxr);
 
 void
 check_ferror (FILE *fin);
@@ -31,7 +44,7 @@ found_whitespace (char ch);
 
 bool
 found_newline (char ch,
-							 int *line);
+							 Lexer *l);
 
 bool
 can_create_alnum_token (char *buf,
@@ -39,6 +52,9 @@ can_create_alnum_token (char *buf,
 
 bool
 is_a_possible_individual_symbol (char c);
+
+bool
+is_a_possible_symbol (char *buf);
 
 bool
 can_create_symbol_token (char *buf);

@@ -16,7 +16,7 @@
 
 typedef struct AstNode {
 	union {
-		Computation *comp;
+		Computation *computation;
 		struct VarDecl *var_decl;
 		struct Number *num;
 		struct FuncDecl *func_decl;
@@ -37,7 +37,7 @@ typedef struct Ast {
 } Ast;
 
 Ast *
-init_ast ();
+new_ast ();
 
 /* void */
 /* append_subtree (Ast **subtree, */

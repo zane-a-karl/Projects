@@ -3,6 +3,15 @@
 // Global symbol lookup table.
 //extern VarTable *vt;
 
+// Tkns that signal a stmt beginning
+const TokenType stmt_terminals[] = {LET,
+																		CALL,
+																		IF,
+																		WHILE,
+																		RETURN};
+const int num_stmt_terminals =
+	sizeof(stmt_terminals)/sizeof(TokenType);
+
 // Look up table for syntax error strings.
 const char *parser_error_table[] = {
 	"COMPUTATION_NO_LBRACE: Cannot open main",
@@ -11,41 +20,60 @@ const char *parser_error_table[] = {
 	"COMPUTATION_NO_PERIOD: No ending period",
 
 	"VAR_DECL_NO_VAR_NAME : Cannnot find var name",
+	"VAR_DECL_NO_COMMA    : No separating comma",
 	"VAR_DECL_NO_SEMICOLON: No ending semicolon",
 
+	"TYPE_DECL_NO_VAR       : No prefixed var keyword",
+	"TYPE_DECL_NO_ARRAY     : No prefixed array keyword",
 	"TYPE_DECL_NO_LBRACKET  : No opening array bracket",
 	"TYPE_DECL_NO_RBRACKET  : No closing array bracket",
 	"TYPE_DECL_NO_ARRAY_SIZE: Cannot find array size",
 	"TYPE_DECL_NO_TYPE      : Cannot find type declaration",
 
+	"FUNC_DECL_OPT_VOID    : Use of `void` is optional",
 	"FUNC_DECL_NO_FUNC_NAME: Cannot find fn name",
 	"FUNC_DECL_NO_FUNCTION : No beginning 'function'",
 	"FUNC_DECL_NO_SEMICOLON: No ending semicolon",
 
-	"FORMAL_PARAM_NO_LPAREN:   No opening parenthesis",
-	"FORMAL_PARAM_NO_RPAREN:   No closing parenthesis",
+	"FORMAL_PARAM_NO_LPAREN  : No opening parenthesis",
+	"FORMAL_PARAM_NO_COMMA   : Cannot find expected ','",
 	"FORMAL_PARAM_NO_VAR_NAME: Cannnot find var name",
+	"FORMAL_PARAM_NO_RPAREN  : No closing parenthesis",
 
 	"FUNC_BODY_NO_LBRACE: No brace to open function",
 	"FUNC_BODY_NO_RBRACE: No brace to close function",
+
+	"STAT_SEQ_NO_SEMICOLON: No separating semicolon",
+
+	"STMT_UNRECOGNIZED_TERMINAL: Unk terminal token found",
 
 	"ASSIGNMENT_NO_LET:    No 'let' to denote assignment",
 	"ASSIGNMENT_NO_LARROW: No '<-' to act as assignment op",
 
 	"DESIGNATOR_NO_NAME_REFERENCE: No var name was specified",
+	"DESIGNATOR_NO_LBRACKET      : No opening array bracket",
 	"DESIGNATOR_NO_RBRACKET      : No closing array bracket",
 
-	"TERM_NO_RPAREN:  No closing parenthesis",
+	"EXPR_EXPECTED_PLUS : No plus character",
+	"EXPR_EXPECTED_MINUS: No minus character",
 
-	"FACTOR_UNK_TOKEN_FOUND: Discovered unexpected token",
+	"TERM_EXPECTED_ASTERISK: No asterisk character",
+	"TERM_EXPECTED_SLASH   : No slash character",
+
+	"FACTOR_NO_NUMBER      : No number when it was expected",
+	"FACTOR_NO_LPAREN      : No '(' to open expression",
 	"FACTOR_NO_RPAREN      : No ')' to close expression",
+	"FACTOR_UNK_TOKEN_FOUND: Discovered unexpected token",
 
 	"FUNC_CALL_NO_CALL       : No beginning 'call'",
 	"FUNC_CALL_NAME_REFERENCE: No fn name was specified",
+	"FUNC_CALL_NO_LPAREN     : No closing '(' for fn params",
+	"FUNC_CALL_NO_COMMA      : No ',' found when expected",
 	"FUNC_CALL_NO_RPAREN     : No closing ')' for fn params",
 
 	"IF_STATEMENT_NO_IF  : No beginning 'if'",
 	"IF_STATEMENT_NO_THEN: No expected 'then'",
+	"IF_STATEMENT_NO_ELSE: No expected 'else'",
 	"IF_STATEMENT_NO_FI  : No ending 'fi'",
 
 	"RELATION_NO_RELOP: Relation operator missing",
@@ -60,97 +88,106 @@ const char *parser_error_table[] = {
 };
 
 Parser *
-init_parser(char *filename) {
-
-	Parser *p = calloc(1, sizeof(Parser));
-	p->fin = fopen(filename, "r");
-	check_fopen(p->fin);
+new_parser (char *filename)
+{
+	Parser *p   = calloc(1, sizeof(Parser));
+	// Allocates heap memory to lexer
+	p->lxr      = new_lexer(filename);
+	p->curr_tkn = lex_next_tkn(p->lxr);
 	/* p->fout = fopen("", "r"); */
 	/* check_fopen(p->fout); */
-	p->tl =	calloc(1, sizeof(TokenList));
 	return p;
 }
 
 void
-free_parser (Parser **p) {
-
-	free_token_list((*p)->tl);
-	fclose((*p)->fin);
+free_parser (Parser **p)
+{
+	free_lexer(&((*p)->lxr));
+	// p->curr_tkn is free'd with the lexer
 	/* fclose((*p)->fout); */
 	free(*p);
 }
 
 Ast *
-parse (Parser *p) {
-
-	Ast *ast = init_ast();
-	// Might need to deep copy p->tl->head into another
-	// tokennode pointer in order to no "use up" the token
-
-	ast->root->comp = smpl_computation(&(p->tl->head));
+parse (Parser *p)
+{
+	// ONLY ast and ast->root calloc'd here
+	Ast *ast = new_ast();
+	ast->root->computation = smpl_computation(p);
 	printf("Parsing Complete!\n");
+
 	return ast;
+}
+
+bool
+peek_tkn (TokenType t,
+					Parser *p)
+{
+	return p->curr_tkn->tkn->type == t;
+}
+
+bool
+peek_stmt_terminals (Parser *p)
+{
+	for (int i = 0; i < num_stmt_terminals; ++i) {
+		if (p->curr_tkn->tkn->type == stmt_terminals[i])
+			return true;
+	}
+	return false;
+}
+
+void
+consume_tkn (TokenType t,
+						 Parser *p,
+						 ParserError e)
+{
+	if ( peek_tkn(t, p) ) {
+		p->curr_tkn = lex_next_tkn(p->lxr);
+	} else {
+		throw_parser_error(p->lxr, e);
+	}
 }
 
 // computation = "main" { varDecl } { funcDecl }
 // "{" statSequence "}" "."
 Computation *
-smpl_computation (TokenNode **tn) {
+smpl_computation (Parser *p)
+{
+	// ONLY c, vdl, and fdl calloc'd here
+	Computation *c = new_computation();
 
-	Computation *c = init_computation();
-
-	assert_token_type_is(MAIN, tn,
-											 COMPUTATION_NO_MAIN);
-	next_token(tn);
-	while ( token_type_is(VAR, tn) ||
-					token_type_is(ARRAY, tn) ) {
-
-		push_vdl_data(&c->var_decls, smpl_var_decl(tn));
+	consume_tkn(MAIN, p, COMPUTATION_NO_MAIN);
+	while ( peek_tkn(VAR, p) ||	peek_tkn(ARRAY, p) ) {
+		push_vd(c->var_decls, smpl_var_decl(p));
 	}
-	while ( token_type_is(FUNCTION, tn) ||
-					token_type_is(VOID, tn) ) {
-
-		push_fdl_data(&c->func_decls, smpl_func_decl(tn));
+	while ( peek_tkn(FUNCTION, p) || peek_tkn(VOID, p) ) {
+		push_fd(c->func_decls, smpl_func_decl(p));
 	}
-	assert_token_type_is(LBRACE, tn,
-											 COMPUTATION_NO_LBRACE);
-	next_token(tn);
-	c->stmts = smpl_stat_sequence(tn);
-	assert_token_type_is(RBRACE, tn,
-											 COMPUTATION_NO_RBRACE);
-	next_token(tn);
-	assert_token_type_is(PERIOD, tn,
-											 COMPUTATION_NO_PERIOD);
-	next_token(tn);
+	consume_tkn(LBRACE, p, COMPUTATION_NO_LBRACE);
+	c->stmts = smpl_stat_sequence(p);
+	consume_tkn(RBRACE, p, COMPUTATION_NO_RBRACE);
+	consume_tkn(PERIOD, p, COMPUTATION_NO_PERIOD);
+
 	return c;
 }
 
 // varDecl = typeDecl ident { "," ident } ";"
 struct VarDecl *
-smpl_var_decl (TokenNode **tn) {
+smpl_var_decl (Parser *p)
+{
+	// ONLY vd and il calloc'd here
+	struct VarDecl *vd = new_vd();
+	vd->dimensions = smpl_type_decl(p);
+	push_ident(vd->identifiers,
+						 smpl_ident(p, VAR_DECL_NO_VAR_NAME));
 
-	// New vd, num_list, ident_list calloc'd here
-	struct VarDecl *vd = init_vd();
-	// TODO: handle doulbe calloc dims here!
-	vd->dimensions = smpl_type_decl(tn);
-	assert_token_type_is(IDENT, tn,
-											 VAR_DECL_NO_VAR_NAME);
-	// New ident_node calloc'd here
-	push_ident_list_data(&vd->identifiers,
-											 build_ident((*tn)->tkn->raw));
-	next_token(tn);
-	while ( token_type_is(COMMA, tn) ) {
-		next_token(tn);
-		assert_token_type_is(IDENT, tn,
-												 VAR_DECL_NO_VAR_NAME);
-		// New ident_node calloc'd here
-		push_ident_list_data(&vd->identifiers,
-												 build_ident((*tn)->tkn->raw));
-		next_token(tn);
+	while ( peek_tkn(COMMA, p) ) {
+		consume_tkn(COMMA, p, VAR_DECL_NO_COMMA);
+		push_ident(vd->identifiers,
+							 smpl_ident(p, VAR_DECL_NO_VAR_NAME));
 	}
-	assert_token_type_is(SEMICOLON, tn,
-											 VAR_DECL_NO_SEMICOLON);
-	next_token(tn);
+	consume_tkn(SEMICOLON, p, VAR_DECL_NO_SEMICOLON);
+
 	return vd;
 }
 
@@ -161,146 +198,130 @@ smpl_var_decl (TokenNode **tn) {
 //  the list of dimensions of the identifier. For scalars
 //  we would just  have an empty list, i.e.
 //  list->head = NULL.
-NumList */*for the dimensionts list*/
-smpl_type_decl (TokenNode **tn) {
-
-	NumList *dims = init_num_list();
-	if ( token_type_is(VAR, tn) ) {
-
+NumList *
+smpl_type_decl (Parser *p)
+{
+	// ONLY nl calloc'd here
+	NumList *dims = new_num_list();
+	if ( peek_tkn(VAR, p) ) {
+		consume_tkn(VAR, p, TYPE_DECL_NO_VAR);
 		dims->head = NULL; // i.e. a scalar
-		next_token(tn);
-	} else if ( token_type_is(ARRAY, tn) ) {
 
-		next_token(tn);
+	} else if ( peek_tkn(ARRAY, p) ) {
+		consume_tkn(ARRAY, p, TYPE_DECL_NO_ARRAY);
 		do {
+			consume_tkn(LBRACKET, p, TYPE_DECL_NO_LBRACKET);
+			push_num(dims,
+							 smpl_number(p, TYPE_DECL_NO_ARRAY_SIZE));
+			consume_tkn(RBRACKET, p, TYPE_DECL_NO_RBRACKET);
+		} while ( peek_tkn(LBRACKET, p) );
 
-			assert_token_type_is(LBRACKET, tn,
-													 TYPE_DECL_NO_LBRACKET);
-			next_token(tn);
-			assert_token_type_is(NUMBER, tn,
-													 TYPE_DECL_NO_ARRAY_SIZE);
-			// New node calloc'd here
-			push_num_list_data(&dims,
-												 build_num((*tn)->tkn->val));
-			next_token(tn);
-			assert_token_type_is(RBRACKET, tn,
-													 TYPE_DECL_NO_RBRACKET);
-			next_token(tn);
+	} else {
+		throw_parser_error(p->lxr, TYPE_DECL_NO_TYPE);
+	}
 
-		} while ( token_type_is(LBRACKET, tn) );
-
-	} else { psr_err(tn, TYPE_DECL_NO_TYPE);}
 	return dims;
+}
+
+Num *
+smpl_number (Parser *p,
+						 ParserError e)
+{
+	// ONLY num calloc'd here
+	Num *num = new_num();
+	consume_tkn(NUMBER, p, e);
+	num->val = p->curr_tkn->tkn->val;
+	return num;
+}
+
+Ident *
+smpl_ident (Parser *p,
+						ParserError e)
+{
+	// ONLY ident and name calloc'd here
+	Ident *ident = new_ident();
+	consume_tkn(IDENT, p, e);
+	for (int i = 0; i < MAX_VAR_NAME_LEN; ++i) {
+		ident->name[i] = p->curr_tkn->tkn->raw[i];
+	}
+	return ident;
 }
 
 // funcDecl =
 // [ "void" ] "function"
 // ident formalParam ";" funcBody ";"
 struct FuncDecl *
-smpl_func_decl (TokenNode **tn) {
-
-	// New fd, ident, ident_list, vdl, sl calloc'd here
-	struct FuncDecl *fd = init_fd();
-	// No error because "void" is optional
-	if ( token_type_is(VOID, tn) ) {
-
+smpl_func_decl (Parser *p)
+{
+	// ONLY fd calloc'd here
+	struct FuncDecl *fd = new_fd();
+	if ( peek_tkn(VOID, p) ) {
+		consume_tkn(VOID, p, FUNC_DECL_OPT_VOID);
 		fd->is_void = true;
-		next_token(tn);
 	}
-	assert_token_type_is(FUNCTION, tn,
-											 FUNC_DECL_NO_FUNCTION);
-	next_token(tn);
-	assert_token_type_is(IDENT, tn,
-											 FUNC_DECL_NO_FUNC_NAME);
-	// This sets the fn name TODO: handle double calloc
-	fd->ident = build_ident((*tn)->tkn->raw);
-	next_token(tn);
-	// TODO: handle double calloc
-	fd->params = smpl_formal_param(tn);
-	assert_token_type_is(SEMICOLON, tn,
-											 FUNC_DECL_NO_SEMICOLON);
-	next_token(tn);
-	// TODO: check if there's a double calloc here
-	FuncBody *fb   = smpl_func_body(tn);
-	fd->local_vars = fb->local_vars;
-	fd->stmts      = fb->stmts;
-	assert_token_type_is(SEMICOLON, tn,
-											 FUNC_DECL_NO_SEMICOLON);
-	next_token(tn);
+	consume_tkn(FUNCTION, p, FUNC_DECL_NO_FUNCTION);
+	fd->name    = smpl_ident(p, FUNC_DECL_NO_FUNC_NAME);
+	fd->params  = smpl_formal_param(p);
+	consume_tkn(SEMICOLON, p, FUNC_DECL_NO_SEMICOLON);
+	fd->body    = smpl_func_body(p);
+	consume_tkn(SEMICOLON, p, FUNC_DECL_NO_SEMICOLON);
+
 	return fd;
 }
 
 // formalParam = "(" [ident { "," ident }] ")"
-IdentList * /*for the param list*/
-smpl_formal_param (TokenNode **tn) {
+IdentList *
+smpl_formal_param (Parser *p)
+{
+	// ONLY il calloc'd here
+	IdentList *params = new_ident_list();
+	consume_tkn(LPAREN, p, FORMAL_PARAM_NO_LPAREN);
+	if ( peek_tkn(IDENT, p) ) {
+		push_ident(params,
+							 smpl_ident(p, FORMAL_PARAM_NO_VAR_NAME));
+		while ( peek_tkn(COMMA, p) ) {
+			consume_tkn(COMMA, p, FORMAL_PARAM_NO_COMMA);
+			push_ident(params,
+								 smpl_ident(p, FORMAL_PARAM_NO_VAR_NAME));
+		} // endwhile
+	} // endif
+	consume_tkn(RPAREN, p, FORMAL_PARAM_NO_RPAREN);
 
-	IdentList *params = init_ident_list();
-	assert_token_type_is(LPAREN, tn,
-											 FORMAL_PARAM_NO_LPAREN);
-	next_token(tn);
-	if ( token_type_is(IDENT, tn) ) {
-
-		// New ident_node calloc'd here
-		push_ident_list_data(&params,
-												 build_ident((*tn)->tkn->raw));
-		next_token(tn);
-		while ( token_type_is(COMMA, tn) ) {
-
-			next_token(tn);
-			assert_token_type_is(IDENT, tn,
-													 FORMAL_PARAM_NO_VAR_NAME);
-
-			// New ident_node calloc'd here
-			push_ident_list_data(&params,
-													 build_ident((*tn)->tkn->raw));
-			next_token(tn);
-		}
-	} // No error b/c param's are optional
-	assert_token_type_is(RPAREN, tn,
-											 FORMAL_PARAM_NO_RPAREN);
-	next_token(tn);
 	return params;
 }
 
 // funcBody = { varDecl } "{" [ statSequence ] "}"
 FuncBody *
-smpl_func_body (TokenNode **tn) {
-
-	// new fb, vdl, sl calloc'd here
-	FuncBody *fb = init_func_body();
-	while ( token_type_is(VAR, tn) ||
-					token_type_is(ARRAY, tn) ) {
+smpl_func_body (Parser *p)
+{
+	// ONLY fb and vdl calloc'd here
+	FuncBody *fb = new_func_body();
+	while ( peek_tkn(VAR, p) ||
+					peek_tkn(ARRAY, p) ) {
 
 		// new vdln calloc'd here
-		push_vdl_data(&fb->local_vars, smpl_var_decl(tn));
+		push_vd(fb->local_vars, smpl_var_decl(p));
 	}
-	assert_token_type_is(LBRACE, tn,
-											 FUNC_BODY_NO_LBRACE);
-	next_token(tn);
-	// Stmt can be empty
-	// new sl calloc'd here TODO: check for double calloc
-	fb->stmts = smpl_stat_sequence(tn);
-	assert_token_type_is(RBRACE, tn,
-											 FUNC_BODY_NO_RBRACE);
-	next_token(tn);
+	consume_tkn(LBRACE, p, FUNC_BODY_NO_LBRACE);
+	fb->stmts = smpl_stat_sequence(p);
+	consume_tkn(RBRACE, p, FUNC_BODY_NO_RBRACE);
+
 	return fb;
 }
 
 // statSequence = statement { ";" statement } [ ";" ]
 StmtList *
-smpl_stat_sequence (TokenNode **tn) {
+smpl_stat_sequence (Parser *p)
+{
+	// ONLY sl calloc'd here
+	StmtList *sl = new_sl();
+	push_stmt(sl, smpl_statement(p));
+	while ( peek_tkn(SEMICOLON, p) ) {
 
-	StmtList *sl = init_sl();
-	push_sl_data(&sl, smpl_statement(tn));
-	while ( token_type_is(SEMICOLON, tn) ) {
-
-		next_token(tn);
-		push_sl_data(&sl, smpl_statement(tn));
-	}
-	// No error b/c terminating ";"s are optional
-	if ( token_type_is(SEMICOLON, tn) ) {
-
-		next_token(tn);
+		consume_tkn(SEMICOLON, p, STAT_SEQ_NO_SEMICOLON);
+		if ( peek_stmt_terminals(p) ) {
+			push_stmt(sl, smpl_statement(p));
+		}
 	}
 	return sl;
 }
@@ -309,107 +330,104 @@ smpl_stat_sequence (TokenNode **tn) {
 // assignment | "void" funcCall | ifStatement |
 // whileStatement | returnStatement
 Stmt *
-smpl_statement (TokenNode **tn) {
+smpl_statement (Parser *p)
+{
+	// ONLY Stmt calloc'd here
+	Stmt *s = new_stmt();
+	if ( peek_tkn(LET, p) ) {
 
-	// new stmt and assoc'd fields calloc'd here
-	Stmt *s = init_stmt();
-	if ( token_type_is(LET, tn) ) {
+		s->assignment = smpl_assignment(p);
+	} else if ( peek_tkn(CALL, p) ) {
 
-		// new assignment stmt calloc'd here
-		s->assignment = smpl_assignment(tn);
-	} else if ( token_type_is(CALL, tn) ) {
+		s->func_call = smpl_func_call(p);
+	} else if ( peek_tkn(IF, p) ) {
 
-		// new func call stmt calloc'd here
-		s->func_call = smpl_func_call(tn);
-	} else if ( token_type_is(IF, tn) ) {
+		s->if_stmt = smpl_if_statement(p);
+	} else if ( peek_tkn(WHILE, p) ) {
 
-		// new if stmt calloc'd here
-		s->if_stmt = smpl_if_statement(tn);
-		// new if stmt calloc'd here
-	} else if ( token_type_is(WHILE, tn) ) {
+		s->while_stmt = smpl_while_statement(p);
+	} else if ( peek_tkn(RETURN, p) ) {
 
-		// new while stmt calloc'd here
-		s->while_stmt = smpl_while_statement(tn);
-	} else if ( token_type_is(RETURN, tn) ) {
-
-		// new return stmt calloc'd here
-		s->return_stmt = smpl_return_statement(tn);
+		s->return_stmt = smpl_return_statement(p);
+	} else {
+		throw_parser_error(p->lxr, STMT_UNRECOGNIZED_TERMINAL);
 	}
 	return s;
 }
 
 // assignment = "let" designator "<-" expression
 Assignment *
-smpl_assignment (TokenNode **tn) {
-
-	// new assgnmt, desig, result calloc'd here
-	Assignment *a = init_assignment();
-	assert_token_type_is(LET, tn,
-											 ASSIGNMENT_NO_LET);
-	next_token(tn);
-	a->lhs = smpl_designator(tn);
-	assert_token_type_is(LARROW, tn,
-											 ASSIGNMENT_NO_LARROW);
-	next_token(tn);
-	a->rhs = smpl_expression(tn);
+smpl_assignment (Parser *p)
+{
+	// ONLY assignment calloc'd here
+	Assignment *a = new_assignment();
+	consume_tkn(LET, p,	ASSIGNMENT_NO_LET);
+	a->lhs = smpl_designator(p);
+	consume_tkn(LARROW, p, ASSIGNMENT_NO_LARROW);
+	a->rhs = smpl_expression(p);
 	return a;
 }
 
 // designator = ident{ "[" expression "]" }
 Designator *
-smpl_designator (TokenNode **tn) {
+smpl_designator (Parser *p)
+{
+	// ONLY designator and result list calloc'd here
+	Designator *d = new_designator();
+	d->ident = smpl_ident(p, DESIGNATOR_NO_NAME_REFERENCE);
+	while ( peek_tkn(LBRACKET, p) ) {
 
-	// new des, ident, res_list calloc'd here
-	Designator *d = init_designator();
-	assert_token_type_is(IDENT, tn,
-											 DESIGNATOR_NO_NAME_REFERENCE);
-	// new ident calloc'd here TODO: double calloc?
-	d->ident = build_ident((*tn)->tkn->raw);
-	next_token(tn);
-	while ( token_type_is(LBRACKET, tn) ) {
-
-		next_token(tn);
-		// new res list node calloc'd here
-		push_res_list_data(&d->indices,
-											 smpl_expression(tn));
-		assert_token_type_is(RBRACKET, tn,
-												 DESIGNATOR_NO_RBRACKET);
-		next_token(tn);
+		consume_tkn(LBRACKET, p, DESIGNATOR_NO_LBRACKET);
+		push_result(d->indices, smpl_expression(p));
+		consume_tkn(RBRACKET, p, DESIGNATOR_NO_RBRACKET);
 	}
+	/////////////////////////////////////////////////////////
+	// CHECK: CHECK for d->indices==NULL ?? Y/N??     ///// /
+	/////////////////////////////////////////////////////////
 	return d;
 }
 
 // expression = term {("+" | "-") term}
-union Result *
-smpl_expression (TokenNode **tn) {
+struct Result *
+smpl_expression (Parser *p)
+{
+	// ONLY the `result` is calloc'd here
+	struct Result *r = new_res();
+	r->bin_op = new_bin_op();
+	r->bin_op->lhs = smpl_term(p);
+	while ( peek_tkn(PLUS, p) ||
+					peek_tkn(MINUS, p) ) {
 
-	// Nothing by the result union calloc'd here
-	union Result *r = init_res();	
-	r->bin_op->lhs = smpl_term(tn);
-	while ( token_type_is(PLUS, tn) ||
-					token_type_is(MINUS, tn) ) {
-		
-		r->bin_op->op = token_type_is(PLUS, tn) ? "+" : "-";
-		next_token(tn);
-		r->bin_op->rhs = smpl_term(tn);
+		r->bin_op->op = peek_tkn(PLUS, p) ? "+" : "-";
+		if ( peek_tkn(PLUS, p) ) {
+			consume_tkn(PLUS, p, EXPR_EXPECTED_PLUS);
+		} else {
+			consume_tkn(MINUS, p, EXPR_EXPECTED_MINUS);
+		}
+		r->bin_op->rhs = smpl_term(p);
 	}
 	return r;
 }
 
 // term = factor {("*" | "/") factor}
-union Result *
-smpl_term (TokenNode **tn) {
+struct Result *
+smpl_term (Parser *p)
+{
+	// ONLY the `result` is calloc'd here
+	struct Result *r = new_res();
+	r->bin_op = new_bin_op();
+	r->bin_op->lhs = smpl_factor(p);
+	while ( peek_tkn(ASTERISK, p) ||
+					peek_tkn(SLASH, p) ) {
 
-	// Nothing by the result union calloc'd here
-	union Result *r = init_res();
-	r->bin_op->lhs = smpl_factor(tn);
-	while ( token_type_is(ASTERISK, tn) ||
-					token_type_is(SLASH, tn) ) {
-		
 		r->bin_op->op =
-			token_type_is(ASTERISK, tn) ? "*" : "/";
-		next_token(tn);
-		r->bin_op->rhs = smpl_factor(tn);
+			peek_tkn(ASTERISK, p) ? "*" : "/";
+		if ( peek_tkn(ASTERISK, p) ) {
+			consume_tkn(ASTERISK, p, TERM_EXPECTED_ASTERISK);
+		} else {
+			consume_tkn(SLASH, p, TERM_EXPECTED_SLASH);
+		}
+		r->bin_op->rhs = smpl_factor(p);
 	}
 	return r;
 }
@@ -417,29 +435,30 @@ smpl_term (TokenNode **tn) {
 // factor = designator | number | "(" expression ")" |
 // funcCall
 // NOTE: only "non-void" fns may be called here.
-union Result *
-smpl_factor (TokenNode **tn) {
+struct Result *
+smpl_factor (Parser *p)
+{
+	// ONLY the `result`, its `binop`, and the binop's `op`
+	// are calloc'd here
+	struct Result *r = new_res();
+	if ( peek_tkn(IDENT, p) ) {
 
-	// Nothing by the result union calloc'd here
-	union Result *r = init_res();
-	if ( token_type_is(IDENT, tn) ) {
+		r->des = smpl_designator(p);
+	} else if ( peek_tkn(NUMBER, p) ) {
 
-		r->des = smpl_designator(tn);
-	} else if ( token_type_is(NUMBER, tn) ) {
+		r->num = smpl_number(p, FACTOR_NO_NUMBER);
+	} else if ( peek_tkn(LPAREN, p) ) {
 
-		r->num = build_num((*tn)->tkn->val);
-		next_token(tn);
+		consume_tkn(LPAREN, p, FACTOR_NO_LPAREN);
+		r = smpl_expression(p);
+		consume_tkn(RPAREN, p, FACTOR_NO_RPAREN);
+	} else if ( peek_tkn(CALL, p) ) {
 
-	} else if ( token_type_is(LPAREN, tn) ) {
+		r->func_call = smpl_func_call(p);
+	} else {
+		throw_parser_error(p->lxr, FACTOR_UNK_TOKEN_FOUND);
+	}
 
-		next_token(tn);
-		r = smpl_expression(tn);
-		assert_token_type_is(RPAREN, tn, FACTOR_NO_RPAREN);
-		next_token(tn);
-	} else if ( token_type_is(CALL, tn) ) {
-
-		r->func_call = smpl_func_call(tn);
-	} else { psr_err(tn, FACTOR_UNK_TOKEN_FOUND); }
 	return r;
 }
 
@@ -448,57 +467,46 @@ smpl_factor (TokenNode **tn) {
 // { "," expression } ] ")" ]
 // fns without params don't need "()" but can have them!
 FuncCall *
-smpl_func_call (TokenNode **tn) {
+smpl_func_call (Parser *p)
+{
+	// ONLY fc and fc->args calloc'd here
+	FuncCall *fc = new_func_call();
+	consume_tkn(CALL, p, FUNC_CALL_NO_CALL);
+	fc->name = smpl_ident(p, FUNC_CALL_NAME_REFERENCE);
+	if ( peek_tkn(LPAREN, p) ) {
 
-	// ident and result list calloc'd here
-	FuncCall *fc = init_func_call();
-	assert_token_type_is(CALL, tn, FUNC_CALL_NO_CALL);
-	next_token(tn);
-	assert_token_type_is(IDENT, tn,
-											 FUNC_CALL_NAME_REFERENCE);
-	fc->ident = build_ident((*tn)->tkn->raw);
-	next_token(tn);
-	// No error b/c "(" is optional
-	if ( token_type_is(LPAREN, tn) ) {
+		consume_tkn(LPAREN, p, FUNC_CALL_NO_LPAREN);
+		push_result(fc->args, smpl_expression(p));
+		while ( peek_tkn(COMMA, p) ) {
 
-		next_token(tn);
-		// new res list node calloc'd here
-		// TODO: will arg_exprs->head exist due to the union?
-		push_res_list_data(&fc->arg_exprs,
-											 smpl_expression(tn));
-		while ( token_type_is(COMMA, tn) ) {
-
-			// new res list node calloc'd here
-			push_res_list_data(&fc->arg_exprs,
-												 smpl_expression(tn));
+			consume_tkn(COMMA, p, FUNC_CALL_NO_COMMA);
+			push_result(fc->args, smpl_expression(p));
 		}
-		assert_token_type_is(RPAREN, tn,
-												 FUNC_CALL_NO_RPAREN);
-		next_token(tn);
+		consume_tkn(RPAREN, p, FUNC_CALL_NO_RPAREN);
 	}
 	return fc;
 }
 
 // relation = expression relOp expression
 BinOp *
-smpl_relation (TokenNode **tn) {
+smpl_relation (Parser *p)
+{
+	// ONLY bo and bo->op calloc'd here
+	BinOp *bo = new_bin_op();
+	bo->lhs = smpl_expression(p);
+	if ( peek_tkn(OP_INEQ, p) ||
+			 peek_tkn(OP_EQ, p) ||
+			 peek_tkn(OP_LT, p) ||
+			 peek_tkn(OP_LE, p) ||
+			 peek_tkn(OP_GT, p) ||
+			 peek_tkn(OP_GE, p) ) {
 
-	// res str and res all calloc'd here
-	BinOp *bo = init_bin_op();
-	bo->lhs = smpl_expression(tn);
-	if ( token_type_is(OP_INEQ, tn) ||
-			 token_type_is(OP_EQ, tn) ||
-			 token_type_is(OP_LT, tn) ||
-			 token_type_is(OP_LE, tn) ||
-			 token_type_is(OP_GT, tn) ||
-			 token_type_is(OP_GE, tn) ) {
-
+		consume_tkn(p->curr_tkn->tkn->type, p, RELATION_NO_RELOP);
 		// the op can only be two chars
-		strncpy(bo->op, (*tn)->tkn->raw, 2);
-		next_token(tn);
-	} else { psr_err(tn, RELATION_NO_RELOP); }
-	
-	bo->rhs = smpl_expression(tn);
+		strncpy(bo->op, p->curr_tkn->tkn->raw, 2);
+	}
+	bo->rhs = smpl_expression(p);
+
 	return bo;
 }
 
@@ -506,62 +514,49 @@ smpl_relation (TokenNode **tn) {
 // "if" relation "then"
 // statSequence [ "else" statSequence ] "fi"
 IfStmt *
-smpl_if_statement (TokenNode **tn) {
+smpl_if_statement (Parser *p)
+{
+	// ONLY ifstmt `is` calloc'd here
+	IfStmt *is     = new_if_stmt();
+	consume_tkn(IF, p, IF_STATEMENT_NO_IF);
+	is->condition  = smpl_relation(p);
+	consume_tkn(THEN, p, IF_STATEMENT_NO_THEN);
+	is->then_stmts = smpl_stat_sequence(p);
+	if ( peek_tkn(ELSE, p) ) {
 
-	// binop and 2 stmt lists calloc'd here
-	IfStmt *is = init_if_stmt();
-	assert_token_type_is(IF, tn, IF_STATEMENT_NO_IF);
-	next_token(tn);
-	//TODO: check for double calloc?
-	is->condition = smpl_relation(tn);
-	assert_token_type_is(THEN, tn, IF_STATEMENT_NO_THEN);
-	next_token(tn);
-	//TODO: check for double calloc?
-	is->then_stmts = smpl_stat_sequence(tn);
-	// No error "else" is optional
-	if ( token_type_is(ELSE, tn) ) {
-
-		next_token(tn);
-		// new sln calloc'd here
-		is->else_stmts = smpl_stat_sequence(tn);
+		consume_tkn(ELSE, p, IF_STATEMENT_NO_ELSE);
+		is->else_stmts = smpl_stat_sequence(p);
 	}
-	assert_token_type_is(FI, tn, IF_STATEMENT_NO_FI);
-	next_token(tn);
+	consume_tkn(FI, p, IF_STATEMENT_NO_FI);
+
 	return is;
 }
 
 // whileStatement = "while" relation "do"
 // StatSequence "od"
 WhileStmt *
-smpl_while_statement (TokenNode **tn) {
+smpl_while_statement (Parser *p)
+{
+	// ONLY whilestmt `ws` calloc'd here
+	WhileStmt *ws = new_while_stmt();
+	consume_tkn(WHILE, p, WHILE_STATEMENT_NO_WHILE);
+	ws->condition = smpl_relation(p);
+	consume_tkn(DO, p, WHILE_STATEMENT_NO_DO);
+	ws->do_stmts  = smpl_stat_sequence(p);
+	consume_tkn(OD, p, WHILE_STATEMENT_NO_OD);
 
-	// binop and sl calloc'd here
-	WhileStmt *ws = init_while_stmt();
-	assert_token_type_is(WHILE, tn,
-											 WHILE_STATEMENT_NO_WHILE);
-	//TODO: check for double calloc?
-	ws->condition = smpl_relation(tn);
-	assert_token_type_is(DO, tn, WHILE_STATEMENT_NO_DO);
-	next_token(tn);
-	//TODO: check for double calloc?
-	ws->do_stmts = smpl_stat_sequence(tn);
-	assert_token_type_is(OD, tn,
-											 WHILE_STATEMENT_NO_OD);
-	next_token(tn);
 	return ws;
 }
 
 // returnStatement = "return" [ expression ]
 ReturnStmt *
-smpl_return_statement (TokenNode **tn) {
+smpl_return_statement (Parser *p)
+{
+	// ONLY returnstmt `rs` calloc'd here
+	ReturnStmt *rs = new_return_stmt();
+	consume_tkn(RETURN, p, RETURN_STATEMENT_NO_RETURN);
+	rs->ret_val = smpl_expression(p);
 
-	// res calloc'd here
-	ReturnStmt *rs = init_return_stmt();
-	assert_token_type_is(RETURN, tn,
-											 RETURN_STATEMENT_NO_RETURN);
-	next_token(tn);
-	//TODO: check for double calloc?
-	rs->ret_val = smpl_expression(tn);
 	return rs;
 }
 
@@ -585,31 +580,10 @@ smpl_return_statement (TokenNode **tn) {
 /* } */
 
 void
-psr_err (TokenNode **tn,
-				 ParserError e) {
-
-	printf("Error found on line %i\n", (*tn)->tkn->line);
+throw_parser_error (Lexer *lxr,
+										ParserError e)
+{
+	printf("Error at (line=%i,col=%i)\n", lxr->line, lxr->col);
 	perror(parser_error_table[e]);
 	exit(1);
-}
-
-bool
-token_type_is (TokenType type,
-							 TokenNode **tn) {
-
-	if ( (*tn)->tkn->type == type ) {
-		return true;
-	}
-	return false;
-}
-
-void
-assert_token_type_is (TokenType type,
-											TokenNode **tn,
-											ParserError e) {
-
-	if ( (*tn)->tkn->type == type ) {
-		return;
-	}
-	psr_err(tn, e);
 }

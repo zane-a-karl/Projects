@@ -6,9 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef MAX_PROG_LINE_LEN
-#define MAX_PROG_LINE_LEN 256
-#endif//MAX_PROG_LINE_LEN
+#ifndef MAX_TKN_LEN
+#define MAX_TKN_LEN 64
+#endif//MAX_TKN_LEN
 
 typedef enum TokenType {
 	IDENT,
@@ -67,20 +67,20 @@ typedef struct TokenList {
 } TokenList;
 
 Token *
-init_token ();
+new_token ();
 
 TokenNode *
-init_token_node (Token *t);
+new_token_node (Token *t);
+
+TokenList *
+new_token_list ();
 
 void
 next_token (TokenNode **tn);
 
-void
-clear_token_node (TokenNode *tn);
-
-void
-push_token_node (TokenList *tl,
-								 TokenNode *new_node);
+TokenNode *
+push_token (TokenList *tl,
+						Token *t);
 
 void
 print_token_list (TokenList *tl);
@@ -88,15 +88,13 @@ print_token_list (TokenList *tl);
 void
 free_token_list (TokenList *tl);
 
-void
-create_alnum_token (Token *t,
-										char *buf,
-										int line);
+Token *
+new_alnum_token (char *buf,
+								 int line);
 
-void
-create_symbol_token (Token *t,
-										 char *buf,
-										 int line);
+Token *
+new_symbol_token (char *buf,
+									int line);
 
 void
 check_regex_compilation (int rv);

@@ -13,44 +13,27 @@ typedef struct Ident {
 	char *name;
 } Ident;
 
-typedef struct IdentListNode {
+typedef struct IdentNode {
 	Ident *data;
-	struct IdentListNode *next;
-} IdentListNode;
+	struct IdentNode *next;
+} IdentNode;
 
 typedef struct IdentList {
-	IdentListNode *head;
+	IdentNode *head;
 } IdentList;
 
 Ident *
-init_ident ();
+new_ident ();
 
-IdentListNode *
-init_ident_list_node ();
+IdentNode *
+new_ident_node (Ident *ident);
 
 IdentList *
-init_ident_list ();
-
-Ident *
-build_ident (char *name);
-
-IdentListNode *
-build_ident_list_node (Ident *data);
+new_ident_list ();
 
 void
-next_ident_list_node (IdentListNode **iln);
-
-void
-push_ident_list (IdentList **il,
-								 IdentList *new_il);
-
-void
-push_ident_list_node (IdentList **il,
-											IdentListNode *new_node);
-
-void
-push_ident_list_data (IdentList **il,
-											Ident *new_data);
+push_ident (IdentList *il,
+						Ident *data);
 
 void
 print_ident_list (IdentList *il);

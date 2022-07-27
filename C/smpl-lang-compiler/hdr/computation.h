@@ -12,6 +12,6 @@ typedef struct Computation {
 } Computation;
 
 Computation *
-init_computation ();
+new_computation ();
 
 #endif//_COMPUTATION_H_

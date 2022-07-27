@@ -2,54 +2,41 @@
 
 
 Res *
-init_res () {
-
-	Res *r = calloc(1, sizeof(Res));
+new_res ()
+{
+	Res *r       = calloc(1, sizeof(Res));
+	r->des       = NULL;
+	r->num       = NULL;
+	r->bin_op    = NULL;
+	r->func_call = NULL;
 	return r;
 }
 
-ResListNode *
-init_res_list_node () {
-
-	ResListNode *rln = calloc(1, sizeof(ResListNode));
-	rln->data        = NULL;
-	rln->next        = NULL;
-	return rln;
+ResNode *
+new_res_node (Res *result)
+{
+	ResNode *rn = calloc(1, sizeof(ResNode));
+	rn->data    = result;
+	rn->next    = NULL;
+	return rn;
 }
 
 ResList*
-init_res_list () {
-
+new_res_list ()
+{
 	ResList *rl = calloc(1, sizeof(ResList));
 	rl->head    = NULL;
 	return rl;
 }
 
-// assume data already calloc'd
-ResListNode *
-build_res_list_node (Res *data) {
-
-	ResListNode *rln;
-	rln = calloc(1, sizeof(ResListNode));
-	rln->data = data;
-	rln->next = NULL;
-	return rln;
-}
-
+// assume `new_node` already calloc'd
 void
-next_res_list_node (ResListNode **rln) {
-
-	(*rln) = (*rln)->next;
-}
-
-// assume new_node already calloc'd
-void
-push_res_list_node (ResList **rl,
-										ResListNode *new_node) {
-	
-	ResListNode *i = (*rl)->head;
+push_res_node (ResList *rl,
+							 ResNode *new_node)
+{
+	ResNode *i = rl->head;
 	if ( i == NULL ) {
-		(*rl)->head = new_node;
+		rl->head = new_node;
 	} else {
 		while ( i->next != NULL ) {
 			i = i->next;
@@ -58,19 +45,19 @@ push_res_list_node (ResList **rl,
 	}
 }
 
+// assume `new_data` already calloc'd
 void
-push_res_list_data (ResList **rl,
-										Res *new_data) {
-	
-	ResListNode *new_node = build_res_list_node(new_data);
-	push_res_list_node(rl, new_node);
+push_result (ResList *rl,
+						 Res *new_data)
+{
+	push_res_node(rl, new_res_node(new_data));
 }
 
 void
-print_res_list (ResList *rl) {
-
+print_res_list (ResList *rl)
+{
 	//	int idx = 0;
-  for (ResListNode *i = rl->head;
+  for (ResNode *i = rl->head;
 			 i != NULL;
 			 i = i->next) {
 
@@ -79,10 +66,10 @@ print_res_list (ResList *rl) {
 }
 
 void
-free_res_list (ResList **rl) {
-
-	ResListNode *cur = (*rl)->head;
-	ResListNode *prv;
+free_res_list (ResList **rl)
+{
+	ResNode *cur = (*rl)->head;
+	ResNode *prv;
   while ( cur != NULL ) {
 		prv = cur;
 		cur = cur->next;

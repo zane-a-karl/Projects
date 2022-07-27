@@ -1,57 +1,39 @@
 #include "../hdr/var_decl_list.h"
 
 struct VarDecl *
-init_vd () {
-
+new_vd ()
+{
 	struct VarDecl *vd = calloc(1, sizeof(struct VarDecl));
-	vd->dimensions  = init_num_list();
-	vd->identifiers = init_ident_list();
+	vd->dimensions     = NULL;
+	vd->identifiers    = new_ident_list();
 	return vd;
 }
 
-VarDeclListNode *
-init_vdln () {
-
-	VarDeclListNode *vdln;
-	vdln       = calloc(1, sizeof(VarDeclListNode));
-	vdln->data = init_vd();
-	vdln->next = NULL;
-	return vdln;
+VarDeclNode *
+new_vdn (VarDecl *vd)
+{
+	VarDeclNode *vdn = calloc(1, sizeof(VarDeclNode));
+	vdn->data        = vd;
+	vdn->next        = NULL;
+	return vdn;
 }
 
 VarDeclList *
-init_vdl () {
-
+new_vdl ()
+{
 	VarDeclList *vdl = calloc(1, sizeof(VarDeclList));
 	vdl->head        = NULL;
 	return vdl;
 }
 
-// assume data already calloc'd
-VarDeclListNode *
-build_vdln (struct VarDecl *data) {
-
-	VarDeclListNode *vdln;
-	vdln       = calloc(1, sizeof(VarDeclListNode));
-	vdln->data = data;
-	vdln->next = NULL;
-	return vdln;
-}
-
-void
-next_vdln (VarDeclListNode **vdln) {
-
-	(*vdln) = (*vdln)->next;
-}
-
 // assume new_node already calloc'd
 void
-push_vdln (VarDeclList **vdl,
-					 VarDeclListNode *new_node) {
-	
-	VarDeclListNode *i = (*vdl)->head;
+push_vdn (VarDeclList *vdl,
+					VarDeclNode *new_node)
+{	
+	VarDeclNode *i = vdl->head;
 	if ( i == NULL ) {
-		(*vdl)->head = new_node;
+		vdl->head = new_node;
 	} else {
 		while ( i->next != NULL ) {
 			i = i->next;
@@ -60,20 +42,19 @@ push_vdln (VarDeclList **vdl,
 	}
 }
 
-// assume new_data already calloc'd
+// assume `data` already calloc'd
 void
-push_vdl_data (VarDeclList **vdl,
-							 struct VarDecl *new_data) {
-	
-	VarDeclListNode *new_node = build_vdln(new_data);
-	push_vdln(vdl, new_node);
+push_vd (VarDeclList *vdl,
+				 struct VarDecl *data)
+{	
+	push_vdn(vdl, new_vdn(data));
 }
 
 void
-print_vdl (VarDeclList *vdl) {
-
+print_vdl (VarDeclList *vdl)
+{
 	int idx = 0;
-  for (VarDeclListNode *i = vdl->head;
+  for (VarDeclNode *i = vdl->head;
 			 i != NULL;
 			 i = i->next) {
 		
@@ -85,10 +66,10 @@ print_vdl (VarDeclList *vdl) {
 }
 
 void
-free_vdl (VarDeclList **vdl) {
-
-	VarDeclListNode *cur = (*vdl)->head;
-	VarDeclListNode *prv;
+free_vdl (VarDeclList **vdl)
+{
+	VarDeclNode *cur = (*vdl)->head;
+	VarDeclNode *prv;
   while ( cur != NULL ) {
 		prv = cur;
 		cur=cur->next;

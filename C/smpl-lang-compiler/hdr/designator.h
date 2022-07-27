@@ -14,6 +14,6 @@ struct Designator {
 };
 
 Designator *
-init_designator ();
+new_designator ();
 
 #endif//_DESIGNATOR_H_

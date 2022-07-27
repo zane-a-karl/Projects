@@ -22,8 +22,8 @@ $(BIN): $(OBJS)
 $(OBJ)/%.o: $(SRC)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-dry-run-of-clean:
+dry-run-clean:
 	echo $(RM) -ri $(OBJ)/* $(BINDIR)/* $(SRC)/*~ hdr/*~ | tr -s ' ' | cut -d ' ' -f 1-100 | fmt -w 1 #*.dSYM
 
 clean:
-	$(RM) -ri $(OBJ)/* $(BINDIR)/* $(SRC)/*~ hdr/*~ #*.dSYM
+	$(RM) -r $(OBJ)/* $(BINDIR)/* $(SRC)/*~ hdr/*~ #*.dSYM

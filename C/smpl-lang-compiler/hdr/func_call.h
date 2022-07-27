@@ -5,11 +5,11 @@
 #include "../hdr/result_list.h"
 
 typedef struct FuncCall {
-	Ident *ident;
-	struct ResultList *arg_exprs;
+	Ident *name;
+	struct ResultList *args;
 } FuncCall;
 
 FuncCall *
-init_func_call ();
+new_func_call ();
 
 #endif//_FUNC_CALL_H_

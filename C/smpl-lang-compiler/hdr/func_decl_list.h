@@ -1,6 +1,8 @@
 #ifndef _FUNC_DECL_LIST_H_
 #define _FUNC_DECL_LIST_H_
 
+typedef struct FuncDecl FuncDecl;
+
 #include "../hdr/token.h"
 #include "../hdr/identifier_list.h"
 #include "../hdr/var_decl_list.h"
@@ -13,14 +15,6 @@
 #define MAX_VAR_NAME_LEN 1<<4 //16
 #endif//MAX_VAR_NAME_LEN
 
-typedef struct FuncDecl {
-	struct Ident *ident;
-	struct IdentList *params;
-	VarDeclList *local_vars;
-	struct StmtList *stmts;
-	bool is_void;
-} Func_Decl;
-
 // Wrapper so we can return local_vars and stmts from
 // smpl_func_body
 typedef struct FuncBody {
@@ -28,37 +22,41 @@ typedef struct FuncBody {
 	struct StmtList *stmts;
 } FuncBody;
 
-typedef struct FuncDeclListNode {
-	struct FuncDecl *data;
-	struct FuncDeclListNode *next;
-} FuncDeclListNode;
+struct FuncDecl {
+	bool is_void;
+	struct Ident *name;
+	struct IdentList *params;
+	FuncBody *body;
+};
+
+typedef struct FuncDeclNode {
+	FuncDecl *data;
+	struct FuncDeclNode *next;
+} FuncDeclNode;
 
 typedef struct FuncDeclList {
-	FuncDeclListNode *head;
+	FuncDeclNode *head;
 } FuncDeclList;
 
-struct FuncDecl *
-init_fd ();
+FuncDecl *
+new_fd ();
 
 FuncBody *
-init_func_body ();
+new_func_body ();
+
+FuncDeclNode *
+new_fdn (FuncDecl *fd);
 
 FuncDeclList *
-init_fdl ();
-
-FuncDeclListNode *
-build_fdln (struct FuncDecl *data);
+new_fdl ();
 
 void
-next_fdln (FuncDeclListNode **fdln);
+push_fdn (FuncDeclList *fdl,
+					FuncDeclNode *new_node);
 
 void
-push_fdln (FuncDeclList **fdl,
-					 FuncDeclListNode *new_node);
-
-void
-push_fdl_data (FuncDeclList **fdl,
-							 struct FuncDecl *new_data);
+push_fd (FuncDeclList *fdl,
+				 FuncDecl *data);
 
 void
 print_fdl (FuncDeclList *fdl);

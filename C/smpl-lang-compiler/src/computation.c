@@ -1,11 +1,12 @@
 #include "../hdr/computation.h"
 
 Computation *
-init_computation () {
-
+new_computation ()
+{
 	Computation *c = calloc(1, sizeof(Computation));
-	c->var_decls   = init_vdl();
-	c->func_decls  = init_fdl();
-	c->stmts       = init_sl();
+	c->var_decls   = new_vdl();
+	c->func_decls  = new_fdl();
+	c->stmts       = NULL;
+
 	return c;
 }

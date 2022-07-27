@@ -19,42 +19,36 @@ typedef struct Stmt {
 	struct IfStmt *if_stmt;
 	struct WhileStmt *while_stmt;
 	ReturnStmt *return_stmt;
-	struct StmtListNode *next;
+	struct StmtNode *next;
 } Stmt;
 
 // TODO: think about a better way than circularly
 // dependent types like this
-typedef struct StmtListNode {
+typedef struct StmtNode {
 	Stmt *data;
-	struct StmtListNode *next;
-} StmtListNode;
+	struct StmtNode *next;
+} StmtNode;
 
 typedef struct StmtList {
-	struct StmtListNode *head;
+	struct StmtNode *head;
 } StmtList;
 
 Stmt *
-init_stmt ();
+new_stmt ();
 
-StmtListNode *
-init_sln ();
+StmtNode *
+new_sn (Stmt *stmt);
 
 StmtList *
-init_sl ();
-
-StmtListNode *
-build_sln ();
+new_sl ();
 
 void
-next_sln (StmtListNode **sln);
+push_sn (StmtList *sl,
+				 StmtNode *new_node);
 
 void
-push_sln (StmtList **sl,
-					StmtListNode *new_node);
-
-void
-push_sl_data (StmtList **sl,
-							Stmt *new_data);
+push_stmt (StmtList *sl,
+					 Stmt *data);
 
 void
 print_sl (StmtList *sl);

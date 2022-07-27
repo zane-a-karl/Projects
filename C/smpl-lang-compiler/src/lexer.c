@@ -1,76 +1,138 @@
 #include "../hdr/lexer.h"
 
 extern const char possible_individual_symbols[];
+extern const int num_possible_individual_symbols;
 extern const char *possible_symbols[];
+extern const int num_possible_symbols;
 
-TokenList*
-lex (FILE *fin) {
+Lexer *
+new_lexer (char *input_filename)
+{
+	Lexer *lxr   = calloc(1, sizeof(Lexer));
+	lxr->fin     = fopen(input_filename, "r");
+	// Allocates heap memory for a token list
+	lxr->tl      = new_token_list();
+	memset(lxr->buf, '\0', strnlen(lxr->buf, MAX_TKN_LEN));
+	lxr->pos     = 0;
+	lxr->tkn_num = 0;
+	lxr->line    = 0;
+	lxr->col     = -1;
 
-	TokenList *tl = (TokenList *)calloc(1, sizeof(TokenList));
-	TokenNode *tn;
+	return lxr;
+}
+
+void
+free_lexer (Lexer **lxr)
+{
+	fclose((*lxr)->fin);
+	free_token_list((*lxr)->tl);
+	free((*lxr));
+}
+
+/**
+ *  Lexes a single token from the file attached to `lxr->fin`
+ * and adds it to the end of the token list, `lxr->tl`.
+ * Returns NULL if we've reached the end of the file.
+ */
+TokenNode *
+lex_next_tkn (Lexer *lxr)
+{
 	Token *t;
 	int ch;
-	char buf[MAX_PROG_LINE_LEN];
-	int cursor;
-	int line = 0;
 	regex_t re_alnum;
 	int rv_alnum = regcomp(&re_alnum,
 												 "^[a-zA-Z0-9]*[:blank:]*$",
 												 REG_EXTENDED);
 	check_regex_compilation(rv_alnum);
 
-  do {
-		memset(buf, '\0', strnlen(buf, MAX_PROG_LINE_LEN));
-		cursor = 0;
+	memset(lxr->buf, '\0', strnlen(lxr->buf, MAX_TKN_LEN));
+	lxr->pos = 0;
+	lxr->tkn_num++;
 
-    ch = fgetc(fin);
-		check_ferror(fin);
-		if ( triggered_feof(fin)  )     break;
-		if ( found_whitespace(ch) )     continue;
-		if ( found_newline(ch, &line) ) continue;
-		if ( isalpha(ch) || isdigit(ch) ) {
-			do {
-				buf[cursor++] = ch;
-				ch = fgetc(fin);
-				check_ferror(fin);
+	// Pre-trim leading whitespace
+	do {
+		ch = fgetc(lxr->fin);
+		check_ferror(lxr->fin);
+		if ( triggered_feof(lxr->fin) ) return NULL;
+		lxr->col++;
+	} while ( found_whitespace(ch)
+						|| found_newline(ch, lxr) );
 
-			} while ( isalpha(ch) || isdigit(ch) );
-			ungetc(ch, fin);           // No need for error check.
-			if ( can_create_alnum_token(buf, &re_alnum) ) {
-				t = init_token();        // alloc new mem for tkn
-				create_alnum_token(t, buf, line);
-				tn = init_token_node(t); // alloc new mem for tkn_node
-				push_token_node(tl, tn);
-			}
-		} else if ( is_a_possible_individual_symbol(ch) ) {
-			buf[cursor++] = ch;
-			ch = fgetc(fin);
-			check_ferror(fin);
+	// Handle finding char or digit
+	if ( isalpha(ch) || isdigit(ch) ) {
 
-			buf[cursor++] = ch; // could probably use a##b macro fn to do this and then you wouldn't need to clear erroneous char.
-			if ( !can_create_symbol_token(buf) ) {
-				ungetc(ch, fin);      // No need for error check.
-				buf[--cursor] = '\0'; // clear erroneous character.
-			}
-			t = init_token();        // alloc new mem for tkn
-			create_symbol_token(t, buf, line);
-			tn = init_token_node(t); // alloc new mem for tkn_node
-			push_token_node(tl, tn);
+		do {
+			lxr->buf[lxr->pos] = ch;
+			lxr->pos++;
+			ch = fgetc(lxr->fin);
+			check_ferror(lxr->fin);
+			lxr->col++;
+		} while ( isalpha(ch) || isdigit(ch) );
+
+		// Unget() non-alpha/digit char
+		ungetc(ch, lxr->fin);
+		lxr->col--;
+
+		// Check alpha numeric token creation
+		if ( can_create_alnum_token(lxr->buf, &re_alnum) ) {
+
+			// Allocates heap mem for a token
+			t = new_alnum_token(lxr->buf, lxr->line);
+			return push_token(lxr->tl, t);
 
 		} else {
-			printf("Unknown character found: \"%c\"\n", ch);
+			printf("Unknown tkn seq(%d, %d): \"%s\"\n",
+						 lxr->line,
+						 lxr->col,
+						 lxr->buf);
 			exit(1);
+			return NULL;
 		}
 
-  } while(1);
+		// Handle finding a symbol
+	} else if ( is_a_possible_individual_symbol(ch) ) {
 
-	printf("Completed tokenizing/lexing\n");
+		do {
+			lxr->buf[lxr->pos] = ch;
+			lxr->pos++;
+			ch = fgetc(lxr->fin);
+			check_ferror(lxr->fin);
+			lxr->col++;
+		} while ( is_a_possible_symbol(lxr->buf) );
 
-	return tl;
+		// Unget() non-indiv-symbol char
+		ungetc(ch, lxr->fin);
+		lxr->col--;
+
+		// Check symbol token creation
+		if ( can_create_symbol_token(lxr->buf) ) {
+
+			// Allocates heap mem for a token
+			t =  new_symbol_token(lxr->buf, lxr->line);
+			return push_token(lxr->tl, t);
+
+		} else {
+			printf("Unknown tkn seq(%d, %d): \"%s\"\n",
+						 lxr->line,
+						 lxr->col,
+						 lxr->buf);
+			exit(1);
+			return NULL;
+		}
+
+	} else {
+		printf("Unknown char found(%d, %d): \"%c\"\n",
+					 lxr->line,
+					 lxr->col,
+					 ch);
+		exit(1);
+		return NULL;
+	}
 }
 
 void
-check_ferror (FILE *fin) {
+check_ferror (FILE *fin)
+{
 	if (ferror(fin) != 0) {
 		perror("Error reading from file");
 		exit(1);
@@ -78,7 +140,8 @@ check_ferror (FILE *fin) {
 }
 
 bool
-triggered_feof (FILE *fin) {
+triggered_feof (FILE *fin)
+{
 	if (feof(fin) != 0) {
 		printf("Reached end of file\n");
 		return true;
@@ -87,7 +150,8 @@ triggered_feof (FILE *fin) {
 }
 
 bool
-found_whitespace (char ch) {
+found_whitespace (char ch)
+{
 	if (ch == ' ' || ch == '\t') {
 		return true;
 	}
@@ -96,9 +160,11 @@ found_whitespace (char ch) {
 
 bool
 found_newline (char ch,
-							 int *line) {
+							 Lexer *l)
+{
 	if (ch == '\n' || ch == '\r') {
-		++(*line);
+		l->line++;
+		l->col = 0;
 		return true;
 	}
 	return false;
@@ -106,23 +172,34 @@ found_newline (char ch,
 
 bool
 can_create_alnum_token (char *buf,
-												regex_t *re_alnum) {
+												regex_t *re_alnum)
+{
 	return regexec(re_alnum, buf, 0, NULL, 0) ? false : true;
 }
 
 bool
-is_a_possible_individual_symbol (char c) {
-	int num_possible_individual_symbols = 17;
+is_a_possible_individual_symbol (char c)
+{
 	for (int i = 0; i < num_possible_individual_symbols; ++i) {
-		if (c == possible_individual_symbols[i]) {
+		if (c == possible_individual_symbols[i])
 			return true;
-		}
 	}
 	return false;
 }
 
 bool
-can_create_symbol_token (char *buf) {
+is_a_possible_symbol (char *buf)
+{
+	for (int i = 0; i < num_possible_symbols; ++i) {
+		if ( strncmp(buf, possible_symbols[i], 2) )
+			return true;
+	}
+	return false;
+}
+
+bool
+can_create_symbol_token (char *buf)
+{
 	int num_possible_symbols = 20;
 	for (int i = 0; i < num_possible_symbols; ++i) {
 		if (strncmp(buf, possible_symbols[i], 2) == 0) {

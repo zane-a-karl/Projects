@@ -10,6 +10,6 @@ typedef struct WhileStmt {
 } WhileStmt;
 
 WhileStmt *
-init_while_stmt ();
+new_while_stmt ();
 
 #endif//_WHILE_STMT_H_

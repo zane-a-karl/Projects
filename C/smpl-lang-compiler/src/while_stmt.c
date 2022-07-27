@@ -1,10 +1,10 @@
 #include "../hdr/while_stmt.h"
 
 WhileStmt *
-init_while_stmt () {
-
+new_while_stmt ()
+{
 	WhileStmt *ws = calloc(1, sizeof(WhileStmt));
-	ws->condition = init_bin_op();
-	ws->do_stmts  = init_sl();
+	ws->condition = NULL;
+	ws->do_stmts  = NULL;
 	return ws;
 }

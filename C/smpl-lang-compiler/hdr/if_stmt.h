@@ -11,6 +11,6 @@ typedef struct IfStmt {
 } IfStmt;
 
 IfStmt *
-init_if_stmt ();
+new_if_stmt ();
 
 #endif//_IF_STMT_H_

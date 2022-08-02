@@ -5,44 +5,44 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct Number {
+struct Number {
 	int val;
-} Num;
+};
 
-typedef struct NumberNode {
-	Num *data;
+struct NumberNode {
+	struct Number *data;
 	struct NumberNode *next;
-} NumNode;
+};
 
-typedef struct NumberList {
-	NumNode *head;
-} NumList;
+struct NumberList {
+	struct NumberNode *head;
+};
 
-Num *
+struct Number *
 new_num ();
 
-NumNode *
+struct NumberNode *
 new_num_node ();
 
-NumList *
+struct NumberList *
 new_num_list ();
 
 /* void */
-/* push_num_list (NumList *nl, */
-/* 							 NumList *new_nl); */
+/* push_num_list (struct NumberList *nl, */
+/* 							 struct NumberList *new_nl); */
 
 void
-push_num_node (NumList *nl,
-							 NumNode *new_node);
+push_num_node (struct NumberList *nl,
+							 struct NumberNode *new_node);
 
 void
-push_num (NumList *nl,
-					Num *data);
+push_num (struct NumberList *nl,
+					struct Number *data);
 
 void
-print_num_list (NumList *nl);
+print_num_list (struct NumberList *nl);
 
 void
-free_num_list (NumList **nl);
+free_num_list (struct NumberList **nl);
 
 #endif//_NUMBER_LIST_H_

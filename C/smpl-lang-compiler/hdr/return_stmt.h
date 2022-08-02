@@ -3,11 +3,11 @@
 
 #include "../hdr/result_list.h"
 
-typedef struct ReturnStmt {
+struct ReturnStmt {
 	struct Result *ret_val;
-} ReturnStmt;
+};
 
-ReturnStmt *
+struct ReturnStmt *
 new_return_stmt ();
 
 #endif//_RETURN_STMT_H_

@@ -1,9 +1,9 @@
 #include "../hdr/stmt_list.h"
 
-Stmt *
+struct Stmt *
 new_stmt ()
 {
-	Stmt *s        = calloc(1, sizeof(Stmt));
+	struct Stmt *s = calloc(1, sizeof(struct Stmt));
 	s->assignment  = NULL;
 	s->func_call   = NULL;
 	s->if_stmt     = NULL;
@@ -13,29 +13,29 @@ new_stmt ()
 	return s;
 }
 
-StmtNode *
-new_sn (Stmt *stmt)
+struct StmtNode *
+new_sn (struct Stmt *stmt)
 {
-	StmtNode *sn = calloc(1, sizeof(StmtNode));
-	sn->data     = stmt;
-	sn->next     = NULL;
+	struct StmtNode *sn = calloc(1, sizeof(struct StmtNode));
+	sn->data            = stmt;
+	sn->next            = NULL;
 	return sn;
 }
 
-StmtList *
+struct StmtList *
 new_sl ()
 {
-	StmtList *sl = calloc(1, sizeof(StmtList));
-	sl->head     = NULL;
+	struct StmtList *sl = calloc(1, sizeof(struct StmtList));
+	sl->head            = NULL;
 	return sl;
 }
 
 // assume `new_node` already calloc'd
 void
-push_sn (StmtList *sl,
-				 StmtNode *new_node)
+push_sn (struct StmtList *sl,
+				 struct StmtNode *new_node)
 {
-	StmtNode *i = sl->head;
+	struct StmtNode *i = sl->head;
 	if ( i == NULL ) {
 		sl->head = new_node;
 	} else {
@@ -48,17 +48,17 @@ push_sn (StmtList *sl,
 
 // assume `new_data` already calloc'd
 void
-push_stmt (StmtList *sl,
-					 Stmt *new_data)
+push_stmt (struct StmtList *sl,
+					 struct Stmt *new_data)
 {
 	push_sn(sl, new_sn(new_data));
 }
 
 void
-print_sl (StmtList *sl)
+print_sl (struct StmtList *sl)
 {
 	//	int idx = 0;
-  for (StmtNode *i = sl->head;
+  for (struct StmtNode *i = sl->head;
 			 i != NULL;
 			 i = i->next) {
 
@@ -70,10 +70,10 @@ print_sl (StmtList *sl)
 }
 
 void
-free_sl (StmtList **sl)
+free_sl (struct StmtList **sl)
 {
-	StmtNode *cur = (*sl)->head;
-	StmtNode *prv;
+	struct StmtNode *cur = (*sl)->head;
+	struct StmtNode *prv;
   while ( cur != NULL ) {
 		prv = cur;
 		cur=cur->next;

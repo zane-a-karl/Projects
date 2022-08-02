@@ -1,10 +1,11 @@
 #include "../hdr/designator.h"
 
-Designator *
+struct Designator *
 new_designator ()
 {
-	Designator *des = calloc(1, sizeof(Designator));
-	des->ident      = NULL;
-	des->indices    = new_res_list();
+	struct Designator *des = calloc(1, sizeof(struct Designator));
+	des->ident             = NULL;
+	des->indices           = new_res_list();
+
 	return des;
 }

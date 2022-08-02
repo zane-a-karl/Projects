@@ -5,13 +5,13 @@
 #include "../hdr/var_decl_list.h"
 #include "../hdr/func_decl_list.h"
 
-typedef struct Computation {
-	VarDeclList *var_decls;
-	FuncDeclList *func_decls;
-	StmtList *stmts;
-} Computation;
+struct Computation {
+	struct VarDeclList *var_decls;
+	struct FuncDeclList *func_decls;
+	struct StmtList *stmts;
+};
 
-Computation *
+struct Computation *
 new_computation ();
 
 #endif//_COMPUTATION_H_

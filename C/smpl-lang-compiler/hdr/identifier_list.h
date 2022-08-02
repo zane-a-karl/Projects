@@ -9,36 +9,36 @@
 #define MAX_VAR_NAME_LEN 1<<4 //16
 #endif//MAX_VAR_NAME_LEN
 
-typedef struct Ident {
+struct Ident {
 	char *name;
-} Ident;
+};
 
-typedef struct IdentNode {
-	Ident *data;
+struct IdentNode {
+	struct Ident *data;
 	struct IdentNode *next;
-} IdentNode;
+};
 
-typedef struct IdentList {
-	IdentNode *head;
-} IdentList;
+struct IdentList {
+	struct IdentNode *head;
+};
 
-Ident *
+struct Ident *
 new_ident ();
 
-IdentNode *
-new_ident_node (Ident *ident);
+struct IdentNode *
+new_ident_node (struct Ident *ident);
 
-IdentList *
+struct IdentList *
 new_ident_list ();
 
 void
-push_ident (IdentList *il,
-						Ident *data);
+push_ident (struct IdentList *il,
+						struct Ident *data);
 
 void
-print_ident_list (IdentList *il);
+print_ident_list (struct IdentList *il);
 
 void
-free_ident_list (IdentList **il);
+free_ident_list (struct IdentList **il);
 
 #endif//_IDENTIFIER_LIST_H_

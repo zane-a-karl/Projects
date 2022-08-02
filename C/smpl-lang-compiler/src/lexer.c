@@ -5,24 +5,23 @@ extern const int num_possible_individual_symbols;
 extern const char *possible_symbols[];
 extern const int num_possible_symbols;
 
-Lexer *
+struct Lexer *
 new_lexer (char *input_filename)
 {
-	Lexer *lxr   = calloc(1, sizeof(Lexer));
-	lxr->fin     = fopen(input_filename, "r");
-	// Allocates heap memory for a token list
-	lxr->tl      = new_token_list();
+	struct Lexer *lxr = calloc(1, sizeof(struct Lexer));
+	lxr->fin          = fopen(input_filename, "r");
+	lxr->tl           = new_token_list();
 	memset(lxr->buf, '\0', strnlen(lxr->buf, MAX_TKN_LEN));
-	lxr->pos     = 0;
-	lxr->tkn_num = 0;
-	lxr->line    = 0;
-	lxr->col     = -1;
+	lxr->pos          = 0;
+	lxr->tkn_num      = 0;
+	lxr->line         = 1;
+	lxr->col          = -1;
 
 	return lxr;
 }
 
 void
-free_lexer (Lexer **lxr)
+free_lexer (struct Lexer **lxr)
 {
 	fclose((*lxr)->fin);
 	free_token_list((*lxr)->tl);
@@ -34,10 +33,10 @@ free_lexer (Lexer **lxr)
  * and adds it to the end of the token list, `lxr->tl`.
  * Returns NULL if we've reached the end of the file.
  */
-TokenNode *
-lex_next_tkn (Lexer *lxr)
+struct TokenNode *
+lex_next_tkn (struct Lexer *lxr)
 {
-	Token *t;
+	struct Token *t;
 	int ch;
 	regex_t re_alnum;
 	int rv_alnum = regcomp(&re_alnum,
@@ -55,8 +54,7 @@ lex_next_tkn (Lexer *lxr)
 		check_ferror(lxr->fin);
 		if ( triggered_feof(lxr->fin) ) return NULL;
 		lxr->col++;
-	} while ( found_whitespace(ch)
-						|| found_newline(ch, lxr) );
+	} while ( found_whitespace(ch) || found_newline(ch, lxr) );
 
 	// Handle finding char or digit
 	if ( isalpha(ch) || isdigit(ch) ) {
@@ -81,10 +79,10 @@ lex_next_tkn (Lexer *lxr)
 			return push_token(lxr->tl, t);
 
 		} else {
-			printf("Unknown tkn seq(%d, %d): \"%s\"\n",
+			printf("struct Lexer Error: Unk alnum tkn '%s' at line:%d, col:%d\n",
+						 lxr->buf,
 						 lxr->line,
-						 lxr->col,
-						 lxr->buf);
+						 lxr->col);
 			exit(1);
 			return NULL;
 		}
@@ -112,16 +110,16 @@ lex_next_tkn (Lexer *lxr)
 			return push_token(lxr->tl, t);
 
 		} else {
-			printf("Unknown tkn seq(%d, %d): \"%s\"\n",
+			printf("struct Lexer Error: Unk sym tkn '%s' at line:%d, col:%d\n",
+						 lxr->buf,
 						 lxr->line,
-						 lxr->col,
-						 lxr->buf);
+						 lxr->col);
 			exit(1);
 			return NULL;
 		}
 
 	} else {
-		printf("Unknown char found(%d, %d): \"%c\"\n",
+		printf("struct Lexer Error: Unk char '%c' found at line:%d, col:%d\n",
 					 lxr->line,
 					 lxr->col,
 					 ch);
@@ -160,7 +158,7 @@ found_whitespace (char ch)
 
 bool
 found_newline (char ch,
-							 Lexer *l)
+							 struct Lexer *l)
 {
 	if (ch == '\n' || ch == '\r') {
 		l->line++;

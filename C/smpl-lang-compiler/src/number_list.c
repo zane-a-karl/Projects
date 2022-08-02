@@ -1,35 +1,35 @@
 #include "../hdr/number_list.h"
 
-Num *
+struct Number *
 new_num ()
 {
-	Num *n = calloc(1, sizeof(Num));
-	n->val = 0;
+	struct Number *n = calloc(1, sizeof(struct Number));
+	n->val           = 0;
 	return n;
 }
 
-NumNode *
-new_num_node (Num *num)
+struct NumberNode *
+new_num_node (struct Number *num)
 {
-	NumNode *nn = calloc(1, sizeof(NumNode));
-	nn->data    = num;
-	nn->next    = NULL;
+	struct NumberNode *nn = calloc(1, sizeof(struct NumberNode));
+	nn->data              = num;
+	nn->next              = NULL;
 	return nn;
 }
 
-NumList *
+struct NumberList *
 new_num_list ()
 {
-	NumList *nl = calloc(1, sizeof(NumList));
-	nl->head    = NULL;
+	struct NumberList *nl = calloc(1, sizeof(struct NumberList));
+	nl->head              = NULL;
 	return nl;
 }
 
 /* void */
-/* push_num_list (NumList **nl, */
-/* 							 NumList *new_nl) { */
+/* push_num_list (struct NumberList **nl, */
+/* 							 struct NumberList *new_nl) { */
 
-/* 	NumNode *i = (*nl)->head; */
+/* 	struct NumberNode *i = (*nl)->head; */
 /* 	while (i->next != NULL) { */
 /* 		i = i->next; */
 /* 	} */
@@ -42,10 +42,10 @@ new_num_list ()
 
 // assume new_node already calloc'd
 void
-push_num_node (NumList *nl,
-							 NumNode *new_node)
+push_num_node (struct NumberList *nl,
+							 struct NumberNode *new_node)
 {
-	NumNode *i = nl->head;
+	struct NumberNode *i = nl->head;
 	if ( i == NULL ) {
 		nl->head = new_node;
 	} else {
@@ -58,17 +58,17 @@ push_num_node (NumList *nl,
 
 // assume `data` already calloc'd
 void
-push_num (NumList *nl,
-					Num *data)
+push_num (struct NumberList *nl,
+					struct Number *data)
 {
 	push_num_node(nl, new_num_node(data));
 }
 
 void
-print_num_list (NumList *nl)
+print_num_list (struct NumberList *nl)
 {
 	int idx = 0;
-  for (NumNode *i = nl->head;
+  for (struct NumberNode *i = nl->head;
 			 i != NULL;
 			 i = i->next) {
 
@@ -77,10 +77,10 @@ print_num_list (NumList *nl)
 }
 
 void
-free_num_list (NumList **nl)
+free_num_list (struct NumberList **nl)
 {
-	NumNode *cur = (*nl)->head;
-	NumNode *prv;
+	struct NumberNode *cur = (*nl)->head;
+	struct NumberNode *prv;
   while ( cur != NULL ) {
 		prv = cur;
 		cur=cur->next;

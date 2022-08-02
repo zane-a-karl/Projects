@@ -4,12 +4,12 @@
 #include "../hdr/result_list.h"
 #include "../hdr/designator.h"
 
-typedef struct Assignment {
-	Designator *lhs;
+struct Assignment {
+	struct Designator *lhs;
 	struct Result *rhs;
-} Assignment;
+};
 
-Assignment *
+struct Assignment *
 new_assignment ();
 
 #endif//_ASSIGNMENT_H_

@@ -3,9 +3,10 @@
 #include "../hdr/token.h"
 #include "../hdr/lexer.h"
 #include "../hdr/parser.h"
-#include "../hdr/ast.h"
+//#include "../hdr/ast.h"
 
 #include <assert.h>
+#include <cgraph.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -25,10 +26,10 @@ main (int argc,
 	assert(argc == 2);
 
 	// Allocates heap memory for parser
-	Parser *psr = new_parser(argv[1]);
+	struct Parser *psr = new_parser(argv[1]);
 
 	// Allocates heap memory for ast
-	Ast *ast = parse(psr);
+	struct Ast *ast = parse(psr);
 
 	// Free heap memory
 	free_parser(&psr);

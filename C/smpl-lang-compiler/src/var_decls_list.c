@@ -6,32 +6,35 @@ new_vd ()
 	struct VarDecl *vd = calloc(1, sizeof(struct VarDecl));
 	vd->dimensions     = NULL;
 	vd->identifiers    = new_ident_list();
+
 	return vd;
 }
 
-VarDeclNode *
-new_vdn (VarDecl *vd)
+struct VarDeclNode *
+new_vdn (struct VarDecl *vd)
 {
-	VarDeclNode *vdn = calloc(1, sizeof(VarDeclNode));
-	vdn->data        = vd;
-	vdn->next        = NULL;
+	struct VarDeclNode *vdn = calloc(1, sizeof(struct VarDeclNode));
+	vdn->data               = vd;
+	vdn->next               = NULL;
+
 	return vdn;
 }
 
-VarDeclList *
+struct VarDeclList *
 new_vdl ()
 {
-	VarDeclList *vdl = calloc(1, sizeof(VarDeclList));
-	vdl->head        = NULL;
+	struct VarDeclList *vdl = calloc(1, sizeof(struct VarDeclList));
+	vdl->head               = NULL;
+
 	return vdl;
 }
 
 // assume new_node already calloc'd
 void
-push_vdn (VarDeclList *vdl,
-					VarDeclNode *new_node)
+push_vdn (struct VarDeclList *vdl,
+					struct VarDeclNode *new_node)
 {	
-	VarDeclNode *i = vdl->head;
+	struct VarDeclNode *i = vdl->head;
 	if ( i == NULL ) {
 		vdl->head = new_node;
 	} else {
@@ -44,17 +47,17 @@ push_vdn (VarDeclList *vdl,
 
 // assume `data` already calloc'd
 void
-push_vd (VarDeclList *vdl,
+push_vd (struct VarDeclList *vdl,
 				 struct VarDecl *data)
 {	
 	push_vdn(vdl, new_vdn(data));
 }
 
 void
-print_vdl (VarDeclList *vdl)
+print_vdl (struct VarDeclList *vdl)
 {
 	int idx = 0;
-  for (VarDeclNode *i = vdl->head;
+  for (struct VarDeclNode *i = vdl->head;
 			 i != NULL;
 			 i = i->next) {
 		
@@ -66,10 +69,10 @@ print_vdl (VarDeclList *vdl)
 }
 
 void
-free_vdl (VarDeclList **vdl)
+free_vdl (struct VarDeclList **vdl)
 {
-	VarDeclNode *cur = (*vdl)->head;
-	VarDeclNode *prv;
+	struct VarDeclNode *cur = (*vdl)->head;
+	struct VarDeclNode *prv;
   while ( cur != NULL ) {
 		prv = cur;
 		cur=cur->next;

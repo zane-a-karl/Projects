@@ -1,9 +1,9 @@
 #include "../hdr/func_decl_list.h"
 
-FuncDecl *
+struct FuncDecl *
 new_fd ()
 {
-	FuncDecl *fd = calloc(1, sizeof(FuncDecl));
+	struct FuncDecl *fd = calloc(1, sizeof(struct FuncDecl));
 	fd->is_void         = false;
 	fd->name            = NULL;
 	fd->params          = NULL;
@@ -11,38 +11,38 @@ new_fd ()
 	return fd;
 }
 
-FuncBody *
+struct FuncBody *
 new_func_body ()
 {
-	FuncBody *fb   = calloc(1, sizeof(FuncBody));
+	struct FuncBody *fb   = calloc(1, sizeof(struct FuncBody));
 	fb->local_vars = new_vdl();
 	fb->stmts      = new_sl();
 	return fb;
 }
 
-FuncDeclNode *
-new_fdn (FuncDecl *fd)
+struct FuncDeclNode *
+new_fdn (struct FuncDecl *fd)
 {
-	FuncDeclNode *fdn = calloc(1, sizeof(FuncDeclNode));
-	fdn->data         = fd;
-	fdn->next         = NULL;
+	struct FuncDeclNode *fdn = calloc(1, sizeof(struct FuncDeclNode));
+	fdn->data                = fd;
+	fdn->next                = NULL;
 	return fdn;
 }
 
-FuncDeclList *
+struct FuncDeclList *
 new_fdl ()
 {
-	FuncDeclList *fdl = calloc(1, sizeof(FuncDeclList));
-	fdl->head         = NULL;
+	struct FuncDeclList *fdl = calloc(1, sizeof(struct FuncDeclList));
+	fdl->head                = NULL;
 	return fdl;
 }
 
 // assume new_node already calloc'd
 void
-push_fdn (FuncDeclList *fdl,
-					FuncDeclNode *new_node)
+push_fdn (struct FuncDeclList *fdl,
+					struct FuncDeclNode *new_node)
 {
-	FuncDeclNode *i = fdl->head;
+	struct FuncDeclNode *i = fdl->head;
 	if ( i == NULL ) {
 		fdl->head = new_node;
 	} else {
@@ -55,17 +55,17 @@ push_fdn (FuncDeclList *fdl,
 
 // assume `new_data` already calloc'd
 void
-push_fd (FuncDeclList *fdl,
-				 FuncDecl *new_data)
+push_fd (struct FuncDeclList *fdl,
+				 struct FuncDecl *new_data)
 {
 	push_fdn(fdl, new_fdn(new_data));
 }
 
 void
-print_fdl (FuncDeclList *fdl)
+print_fdl (struct FuncDeclList *fdl)
 {
 	//	int idx = 0;
-  for (FuncDeclNode *i = fdl->head;
+  for (struct FuncDeclNode *i = fdl->head;
 			 i != NULL;
 			 i = i->next) {
 
@@ -77,10 +77,10 @@ print_fdl (FuncDeclList *fdl)
 }
 
 void
-free_fdl (FuncDeclList **fdl)
+free_fdl (struct FuncDeclList **fdl)
 {
-	FuncDeclNode *cur = (*fdl)->head;
-	FuncDeclNode *prv;
+	struct FuncDeclNode *cur = (*fdl)->head;
+	struct FuncDeclNode *prv;
   while ( cur != NULL ) {
 		prv = cur;
 		cur = cur->next;

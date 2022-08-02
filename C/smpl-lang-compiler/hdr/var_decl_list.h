@@ -1,48 +1,46 @@
 #ifndef _VAR_DECL_LIST_H_
 #define _VAR_DECL_LIST_H_
 
-typedef struct VarDecl VarDecl;
-
 #include "../hdr/number_list.h"
 #include "../hdr/identifier_list.h"
 
 #include <stdlib.h>
 
 struct VarDecl {
-	NumList *dimensions;
-	IdentList *identifiers;
+	struct NumberList *dimensions;
+	struct IdentList *identifiers;
 };
 
-typedef struct VarDeclNode {
-	VarDecl *data;
+struct VarDeclNode {
+	struct VarDecl *data;
 	struct VarDeclNode *next;
-} VarDeclNode;
+};
 
-typedef struct VarDeclList {
-	VarDeclNode *head;
-} VarDeclList;
+struct VarDeclList {
+	struct VarDeclNode *head;
+};
 
-VarDecl *
+struct VarDecl *
 new_vd ();
 
-VarDeclNode *
-new_vdn (VarDecl *vd);
+struct VarDeclNode *
+new_vdn (struct VarDecl *vd);
 
-VarDeclList *
+struct VarDeclList *
 new_vdl ();
 
 void
-push_vdn (VarDeclList *vdl,
-					VarDeclNode *new_node);
+push_vdn (struct VarDeclList *vdl,
+					struct VarDeclNode *new_node);
 
 void
-push_vd (VarDeclList *vdl,
-				 VarDecl *data);
+push_vd (struct VarDeclList *vdl,
+				 struct VarDecl *data);
 
 void
-print_vdl (VarDeclList *vdl);
+print_vdl (struct VarDeclList *vdl);
 
 void
-free_vdl (VarDeclList **vdl);
+free_vdl (struct VarDeclList **vdl);
 
 #endif//_VAR_DECL_LIST_H_

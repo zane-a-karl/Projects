@@ -8,46 +8,60 @@
 #include "../hdr/identifier_list.h"
 #include "../hdr/assignment.h"
 #include "../hdr/designator.h"
-#include "../hdr/bin_op.h"
+//#include "../hdr/bin_op.h"
 #include "../hdr/func_call.h"
 #include "../hdr/if_stmt.h"
 #include "../hdr/while_stmt.h"
 #include "../hdr/return_stmt.h"
 
-typedef struct AstNode {
+#include <graphviz/cgraph.h>
+
+struct AstNodeList;
+
+struct AstNode {
+	Anode_t *anode;
 	union {
-		Computation *computation;
+		struct Computation *computation;
 		struct VarDecl *var_decl;
 		struct Number *num;
 		struct FuncDecl *func_decl;
 		struct Identifier *ident;
-		Assignment *ass;
-		Designator *des;//formerly ArrayAccess *arr_acc;
-		BinOp *bin_op;
-		FuncCall *func_call;
-		IfStmt *if_stmt;
-		WhileStmt *while_stmt;
-		ReturnStmt *ret_stmt;
+		struct Assignment *ass;
+		struct Designator *des;
+		struct BinOp *bin_op;
+		struct FuncCall *func_call;
+		struct IfStmt *if_stmt;
+		struct WhileStmt *while_stmt;
+		struct ReturnStmt *ret_stmt;
 	};
-	//	struct AstNode *children;
-} AstNode;
+	struct AstNodeList *children;
+};
 
-typedef struct Ast {
-	AstNode *root;
-} Ast;
+struct AstNodeList {
+	struct AstNode *head;
+}
 
-Ast *
+struct Ast {
+	Agraph_t *agraph;
+	struct AstNode *root;
+};
+
+struct Ast *
 new_ast ();
 
+struct AstNode *
+new_ast_node (Agraph_t *g,
+							char *node_name);
+
 /* void */
-/* append_subtree (Ast **subtree, */
-/* 								Ast **ast); */
+/* append_subtree (struct Ast **subtree, */
+/* 								struct Ast **ast); */
 
 /* void */
 /* push_basic_block (BasicBlock *bb, */
-/* 									Ast **ast); */
+/* 									struct Ast **ast); */
 
 /* void */
-/* free_subtree (Ast **subtree); */
+/* free_subtree (struct Ast **subtree); */
 
 #endif//_AST_H_

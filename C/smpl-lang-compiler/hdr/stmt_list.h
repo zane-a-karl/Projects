@@ -13,47 +13,47 @@
 
 #include <stdlib.h>
 
-typedef struct Stmt {
-	Assignment *assignment;
-	FuncCall *func_call;
+struct Stmt {
+	struct Assignment *assignment;
+	struct FuncCall *func_call;
 	struct IfStmt *if_stmt;
 	struct WhileStmt *while_stmt;
-	ReturnStmt *return_stmt;
+	struct ReturnStmt *return_stmt;
 	struct StmtNode *next;
-} Stmt;
+};
 
 // TODO: think about a better way than circularly
 // dependent types like this
-typedef struct StmtNode {
-	Stmt *data;
+struct StmtNode {
+	struct Stmt *data;
 	struct StmtNode *next;
-} StmtNode;
+};
 
-typedef struct StmtList {
+struct StmtList {
 	struct StmtNode *head;
-} StmtList;
+};
 
-Stmt *
+struct Stmt *
 new_stmt ();
 
-StmtNode *
-new_sn (Stmt *stmt);
+struct StmtNode *
+new_sn (struct Stmt *stmt);
 
-StmtList *
+struct StmtList *
 new_sl ();
 
 void
-push_sn (StmtList *sl,
-				 StmtNode *new_node);
+push_sn (struct StmtList *sl,
+				 struct StmtNode *new_node);
 
 void
-push_stmt (StmtList *sl,
-					 Stmt *data);
+push_stmt (struct StmtList *sl,
+					 struct Stmt *data);
 
 void
-print_sl (StmtList *sl);
+print_sl (struct StmtList *sl);
 
 void
-free_sl (StmtList **sl);
+free_sl (struct StmtList **sl);
 
 #endif//_STMT_LIST_H_

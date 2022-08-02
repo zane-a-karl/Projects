@@ -4,12 +4,12 @@
 #include "../hdr/identifier_list.h"
 #include "../hdr/result_list.h"
 
-typedef struct FuncCall {
-	Ident *name;
+struct FuncCall {
+	struct Ident      *name;
 	struct ResultList *args;
-} FuncCall;
+};
 
-FuncCall *
+struct FuncCall *
 new_func_call ();
 
 #endif//_FUNC_CALL_H_

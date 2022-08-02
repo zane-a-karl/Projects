@@ -7,6 +7,7 @@ const char possible_individual_symbols[] = {
 };
 const int num_possible_individual_symbols =
 	sizeof(possible_individual_symbols)/sizeof(char);
+
 const char *possible_symbols[] = {
 	"!=", "==", "<", "<=", ">",	">=",  "[", "]", "(", ")",
 	"{" ,  "}", "*",  "/", "+",	 "-", "<-", ";", ".", ","
@@ -14,10 +15,50 @@ const char *possible_symbols[] = {
 const int num_possible_symbols =
 	sizeof(possible_symbols)/sizeof(char *);
 
-Token *
+const char *tkn_types[] = {
+	"IDENT",
+	"NUMBER",
+	"OP_INEQ",
+	"OP_EQ",
+	"OP_LT",
+	"OP_LE",
+	"OP_GT",
+	"OP_GE",
+	"LBRACKET",
+	"RBRACKET",
+	"LPAREN",
+	"RPAREN",
+	"LBRACE",
+	"RBRACE",
+	"ASTERISK",
+	"SLASH",
+	"PLUS",
+	"MINUS",
+	"LET",
+	"LARROW",
+	"CALL",
+	"IF",
+	"THEN",
+	"ELSE",
+	"FI",
+	"WHILE",
+	"DO",
+	"OD",
+	"RETURN",
+	"VAR",
+	"ARRAY",
+	"SEMICOLON",
+	"VOID",
+	"FUNCTION",
+	"MAIN",
+	"PERIOD",
+	"COMMA",
+};
+
+struct Token *
 new_token ()
 {
-	Token *t = calloc(1, sizeof(Token));
+	struct Token *t = calloc(1, sizeof(struct Token));
 	t->type  = 0;
 	t->raw   = calloc(MAX_TKN_LEN, sizeof(char));
 	t->val   = 0;
@@ -31,10 +72,10 @@ new_token ()
  * with the intention of packaging an existing and previously
  * allocated token.
  */
-TokenNode *
-new_token_node (Token *t)
+struct TokenNode *
+new_token_node (struct Token *t)
 {
-	TokenNode *tn = calloc(1,	sizeof(TokenNode));
+	struct TokenNode *tn = calloc(1,	sizeof(struct TokenNode));
 	tn->tkn       = t;
 	tn->next      = NULL;
 	return tn;
@@ -46,26 +87,26 @@ new_token_node (Token *t)
  * pushing then, should require mem allocation,
  * i.e. `new_token_node()`, to be called.
  */
-TokenList *
+struct TokenList *
 new_token_list ()
 {
-	TokenList *tl = calloc(1, sizeof(TokenList));
+	struct TokenList *tl = calloc(1, sizeof(struct TokenList));
 	tl->head      = NULL;
 	return tl;
 }
 
 void
-next_token (TokenNode **tn)
+next_token (struct TokenNode **tn)
 {
 	(*tn) = (*tn)->next;
 }
 
-TokenNode *
-push_token (TokenList *tl,
-						Token *t)
+struct TokenNode *
+push_token (struct TokenList *tl,
+						struct Token *t)
 {
-	TokenNode *new_node = new_token_node(t);
-	TokenNode *i = tl->head;
+	struct TokenNode *new_node = new_token_node(t);
+	struct TokenNode *i = tl->head;
 	if ( i == NULL ) {
 		tl->head = new_node;
 	} else {
@@ -78,10 +119,10 @@ push_token (TokenList *tl,
 }
 
 void
-print_token_list (TokenList *tl)
+print_token_list (struct TokenList *tl)
 {
 	int idx = 0;
-  for (TokenNode *i = tl->head; i != NULL; i=i->next) {
+  for (struct TokenNode *i = tl->head; i != NULL; i=i->next) {
     printf("Tkn %d: type=%d, raw=\"%s\", val=%i, line=%i\n",
            idx++,
            i->tkn->type,
@@ -92,10 +133,10 @@ print_token_list (TokenList *tl)
 }
 
 void
-free_token_list (TokenList *tl)
+free_token_list (struct TokenList *tl)
 {
-	TokenNode *cur = tl->head;
-	TokenNode *prv;
+	struct TokenNode *cur = tl->head;
+	struct TokenNode *prv;
   while ( cur != NULL ) {
 		prv = cur;
 		cur=cur->next;
@@ -103,7 +144,7 @@ free_token_list (TokenList *tl)
 	}
 }
 
-Token *
+struct Token *
 new_alnum_token (char *buf,
 								 int line)
 {
@@ -113,11 +154,11 @@ new_alnum_token (char *buf,
 												 REG_EXTENDED);
 	check_regex_compilation(rv_ident);
 	int rv_number = regcomp(&re_number,
-												 "^[0-9]+$",
-												 REG_EXTENDED);
+													"^[0-9]+$",
+													REG_EXTENDED);
 	check_regex_compilation(rv_number);
 
-	Token *t = new_token();
+	struct Token *t = new_token();
 	strncpy(t->raw, buf, MAX_TKN_LEN);
 	t->line = line;
 
@@ -163,11 +204,11 @@ new_alnum_token (char *buf,
 	return t;
 }
 
-Token *
+struct Token *
 new_symbol_token (char *buf,
 									int line)
 {
-	Token *t = new_token();
+	struct Token *t = new_token();
 	strncpy(t->raw, buf, MAX_TKN_LEN);
 
 	t->line = line;

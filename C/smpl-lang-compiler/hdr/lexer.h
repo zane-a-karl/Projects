@@ -14,24 +14,24 @@
 #define MAX_TKN_LEN 64
 #endif//MAX_TKN_LEN
 
-typedef struct Lexer {
+struct Lexer {
 	FILE *fin;
-	TokenList *tl;
+	struct TokenList *tl;
 	char buf[MAX_TKN_LEN];
 	int pos;     // current position within `buf`
 	int tkn_num; // total # of tkns in list or current tkn #
 	int line;    // Within the file we're currently on
 	int col;     // Within the file we're currently on
-} Lexer;
+};
 
-Lexer *
+struct Lexer *
 new_lexer (char *input_filename);
 
 void
-free_lexer (Lexer **lxr);
+free_lexer (struct Lexer **lxr);
 
-TokenNode *
-lex_next_tkn (Lexer *lxr);
+struct TokenNode *
+lex_next_tkn (struct Lexer *lxr);
 
 void
 check_ferror (FILE *fin);
@@ -44,7 +44,7 @@ found_whitespace (char ch);
 
 bool
 found_newline (char ch,
-							 Lexer *l);
+							 struct Lexer *l);
 
 bool
 can_create_alnum_token (char *buf,

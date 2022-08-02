@@ -1,53 +1,50 @@
 #ifndef _RESULT_LIST_H_
 #define _RESULT_LIST_H_
 
-// Do this to silence circular dependency
-typedef struct Result Res;
-
 #include "../hdr/number_list.h"
 #include "../hdr/bin_op.h"
 #include "../hdr/designator.h"
 #include "../hdr/func_call.h"
 
-typedef struct Result {
+struct Result {
 	union {
-		Designator *des;
-		Num *num;
-		BinOp *bin_op;
-		struct FuncCall *func_call;
+		struct Designator *des;
+		struct Number     *num;
+		struct BinOp      *bin_op;
+		struct FuncCall   *func_call;
 	};
-} Result;
+};
 
-typedef struct ResultNode {
-	Res *data;
+struct ResultNode {
+	struct Result *data;
 	struct ResultNode *next;
-} ResNode;
+};
 
-typedef struct ResultList {
-	ResNode *head;
-} ResList;
+struct ResultList {
+	struct ResultNode *head;
+};
 
-Res *
+struct Result *
 new_res ();
 
-ResNode *
-new_res_node (Res *result);
+struct ResultNode *
+new_res_node (struct Result *result);
 
-ResList *
+struct ResultList *
 new_res_list ();
 
 void
-push_res_node (ResList *rl,
-							 ResNode *new_node);
+push_res_node (struct ResultList *rl,
+							 struct ResultNode *new_node);
 
 void
-push_result (ResList *rl,
-						 Res *new_data);
+push_result (struct ResultList *rl,
+						 struct Result *new_data);
 
 void
-print_res_list (ResList *rl);
+print_res_list (struct ResultList *rl);
 
 void
-free_res_list (ResList **rl);
+free_res_list (struct ResultList **rl);
 
 #endif//_RESULT_LIST_H_

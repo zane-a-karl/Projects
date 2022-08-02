@@ -1,11 +1,12 @@
 #include "../hdr/bin_op.h"
 
-BinOp *
+
+struct BinOp *
 new_bin_op ()
 {
-	BinOp *bo = calloc(1, sizeof(BinOp));
-	bo->lhs   = NULL;
-	bo->op    = calloc(2, sizeof(char));
-	bo->rhs   = NULL;
+	struct BinOp *bo = calloc(1, sizeof(struct BinOp));
+	bo->lhs          = NULL;
+	bo->op           = calloc(2, sizeof(char));
+	bo->rhs          = NULL;
 	return bo;
 }

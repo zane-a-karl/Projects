@@ -1,9 +1,9 @@
 #include "../hdr/return_stmt.h"
 
-ReturnStmt *
+struct ReturnStmt *
 new_return_stmt ()
 {
-	ReturnStmt *rs = calloc(1, sizeof(ReturnStmt));
-	rs->ret_val    = NULL;
+	struct ReturnStmt *rs = calloc(1, sizeof(struct ReturnStmt));
+	rs->ret_val           = NULL;
 	return rs;
 }

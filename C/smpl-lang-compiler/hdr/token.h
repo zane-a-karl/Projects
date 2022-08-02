@@ -10,7 +10,9 @@
 #define MAX_TKN_LEN 64
 #endif//MAX_TKN_LEN
 
-typedef enum TokenType {
+#define TO_STR(type) return #type
+
+enum TokenType {
 	IDENT,
 	NUMBER,
 	OP_INEQ,
@@ -48,51 +50,51 @@ typedef enum TokenType {
 	MAIN,
 	PERIOD,
 	COMMA,
-} TokenType;
+};
 
-typedef struct Token {
-	TokenType type;
+struct Token {
+	enum TokenType type;
 	char *raw;// raw token string
 	int val;  // just for #s, left unused for others
 	int line; // line # on which it was parsed
-} Token;
+};
 
-typedef struct TokenNode {
-	Token *tkn;
+struct TokenNode {
+	struct Token *tkn;
 	struct TokenNode *next;
-} TokenNode;
+};
 
-typedef struct TokenList {
-	TokenNode *head;
-} TokenList;
+struct TokenList {
+	struct TokenNode *head;
+};
 
-Token *
+struct Token *
 new_token ();
 
-TokenNode *
-new_token_node (Token *t);
+struct TokenNode *
+new_token_node (struct Token *t);
 
-TokenList *
+struct TokenList *
 new_token_list ();
 
 void
-next_token (TokenNode **tn);
+next_token (struct TokenNode **tn);
 
-TokenNode *
-push_token (TokenList *tl,
-						Token *t);
-
-void
-print_token_list (TokenList *tl);
+struct TokenNode *
+push_token (struct TokenList *tl,
+						struct Token *t);
 
 void
-free_token_list (TokenList *tl);
+print_token_list (struct TokenList *tl);
 
-Token *
+void
+free_token_list (struct TokenList *tl);
+
+struct Token *
 new_alnum_token (char *buf,
 								 int line);
 
-Token *
+struct Token *
 new_symbol_token (char *buf,
 									int line);
 

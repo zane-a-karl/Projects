@@ -1,39 +1,32 @@
 #include "../hdr/utils.h"
-//#include "../hdr/var_table.h"
 #include "../hdr/token.h"
 #include "../hdr/lexer.h"
 #include "../hdr/parser.h"
-//#include "../hdr/ast.h"
+#include "../hdr/dot_utils.h"
 
 #include <assert.h>
-#include <cgraph.h>
+#include <graphviz/cgraph.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-// Global symbol lookup table.
-//VarTable *vt;
-// Global var for basic block number
-int block_number;
-// Global var for ssa instruction number
-int ssa_number;
 
 int
 main (int argc,
 			char *argv[])
 {
-	// Allocate memory for the first listing in the var table
-	//vt = alloc_var_table();
 	assert(argc == 2);
 
 	// Allocates heap memory for parser
 	struct Parser *psr = new_parser(argv[1]);
 
+	Agraph_t *tlg = agopen("Top Level Graph", Agdirected, NULL);
 	// Allocates heap memory for ast
-	struct Ast *ast = parse(psr);
+	struct Ast *ast = parse(psr, tlg);
+	gen_dot_graph(ast, stdout);
+	//	agwrite(tlg, stdout);
 
 	// Free heap memory
 	free_parser(&psr);
-	//	free_ast(&ast);
+	free_ast(&ast);
 
 	return 0;
 }

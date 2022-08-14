@@ -8,4 +8,3 @@ check_fopen (FILE* f)
     exit(1);
   }
 }
-

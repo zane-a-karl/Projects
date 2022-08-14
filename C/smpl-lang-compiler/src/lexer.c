@@ -25,6 +25,7 @@ free_lexer (struct Lexer **lxr)
 {
 	fclose((*lxr)->fin);
 	free_token_list((*lxr)->tl);
+	free((*lxr)->tl);
 	free((*lxr));
 }
 
@@ -70,6 +71,8 @@ lex_next_tkn (struct Lexer *lxr)
 		// Unget() non-alpha/digit char
 		ungetc(ch, lxr->fin);
 		lxr->col--;
+		lxr->buf[lxr->pos] = '\0';
+		lxr->pos--;
 
 		// Check alpha numeric token creation
 		if ( can_create_alnum_token(lxr->buf, &re_alnum) ) {
@@ -90,17 +93,21 @@ lex_next_tkn (struct Lexer *lxr)
 		// Handle finding a symbol
 	} else if ( is_a_possible_individual_symbol(ch) ) {
 
-		do {
-			lxr->buf[lxr->pos] = ch;
-			lxr->pos++;
-			ch = fgetc(lxr->fin);
-			check_ferror(lxr->fin);
-			lxr->col++;
-		} while ( is_a_possible_symbol(lxr->buf) );
+		lxr->buf[lxr->pos] = ch;
+		lxr->pos++;
+		ch = fgetc(lxr->fin);
+		check_ferror(lxr->fin);
+		lxr->col++;
+		lxr->buf[lxr->pos] = ch;
+		lxr->pos++;
+		if ( !is_a_possible_symbol(lxr->buf) ) {
 
-		// Unget() non-indiv-symbol char
-		ungetc(ch, lxr->fin);
-		lxr->col--;
+			// Unget() non-indiv-symbol char
+			ungetc(ch, lxr->fin);
+			lxr->col--;
+			lxr->pos--;
+			lxr->buf[lxr->pos] = '\0';
+		}
 
 		// Check symbol token creation
 		if ( can_create_symbol_token(lxr->buf) ) {
@@ -141,7 +148,7 @@ bool
 triggered_feof (FILE *fin)
 {
 	if (feof(fin) != 0) {
-		printf("Reached end of file\n");
+		//		printf("Reached end of file\n");
 		return true;
 	}
 	return false;
@@ -160,7 +167,7 @@ bool
 found_newline (char ch,
 							 struct Lexer *l)
 {
-	if (ch == '\n' || ch == '\r') {
+	if (ch == '\n' || ch == '\r' || ch == 10 || ch == 13) {
 		l->line++;
 		l->col = 0;
 		return true;
@@ -179,8 +186,9 @@ bool
 is_a_possible_individual_symbol (char c)
 {
 	for (int i = 0; i < num_possible_individual_symbols; ++i) {
-		if (c == possible_individual_symbols[i])
+		if (c == possible_individual_symbols[i]) {
 			return true;
+		}
 	}
 	return false;
 }
@@ -189,8 +197,9 @@ bool
 is_a_possible_symbol (char *buf)
 {
 	for (int i = 0; i < num_possible_symbols; ++i) {
-		if ( strncmp(buf, possible_symbols[i], 2) )
+		if (strncmp(buf, possible_symbols[i], MAX_TKN_LEN) == 0) {
 			return true;
+		}
 	}
 	return false;
 }
@@ -198,9 +207,8 @@ is_a_possible_symbol (char *buf)
 bool
 can_create_symbol_token (char *buf)
 {
-	int num_possible_symbols = 20;
 	for (int i = 0; i < num_possible_symbols; ++i) {
-		if (strncmp(buf, possible_symbols[i], 2) == 0) {
+		if (strncmp(buf, possible_symbols[i], MAX_TKN_LEN) == 0) {
 			return true;
 		}
 	}

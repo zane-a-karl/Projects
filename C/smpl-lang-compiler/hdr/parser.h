@@ -9,7 +9,6 @@
  * ident = letter {letter | digit}.
  * number = digit {digit}.
  */
-
 #ifndef _PARSER_H_
 #define _PARSER_H_
 
@@ -18,24 +17,14 @@
 #include "../hdr/lexer.h"
 #include "../hdr/ast.h"
 
-//#include "../hdr/var_table.h"
-#include "../hdr/var_decl_list.h"
-#include "../hdr/func_decl_list.h"
-#include "../hdr/stmt_list.h"
-#include "../hdr/computation.h"
-
-//#include "../hdr/basic_block.h"
-//#include "../hdr/dlx.h"
-//#include "../hdr/result_list.h"
-
+#include <assert.h>
 #include <ctype.h>
+#include <graphviz/cgraph.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-/* static const int NUM_REGISTERS = 1<<5; //32 */
-/* static const int NUM_OPCODES = 1<<6; //64 */
 #ifndef MAX_NUM_VARS
 #define MAX_NUM_VARS 1<<8
 #endif//MAX_NUM_VARS
@@ -72,7 +61,7 @@ enum ParserSector {
 struct Parser {
 	struct Lexer *lxr;
 	struct TokenNode *curr_tkn; // pointer to most recently lexed token
-	//FILE *fout; // outputfile QUESTION: IS THIS NEED INSIDE???
+	FILE *fwarn;
 };
 
 struct Parser *
@@ -86,7 +75,20 @@ peek_tkn (enum TokenType t,
 					struct Parser *p);
 
 bool
-peek_stmt_terminals (struct Parser *p);
+peek_stmt_initials (struct Parser *p);
+
+bool
+peek_fctr_initials (struct Parser *p);
+
+void
+throw_parser_error (enum TokenType t,
+										struct Parser *p,
+										enum ParserSector ps);
+
+void
+throw_parser_warning (enum TokenType t,
+											struct Parser *p,
+											enum ParserSector ps);
 
 void
 consume_tkn (enum TokenType t,
@@ -94,78 +96,93 @@ consume_tkn (enum TokenType t,
 						 enum ParserSector ps);
 
 struct Ast *
-parse (struct Parser *p);
+parse (struct Parser *p,
+			 Agraph_t      *tlg);
 
 struct AstNode *
 smpl_computation (struct Parser *p,
-									struct Ast *ast);
+									Agraph_t      *g);
 
-struct VarDecl *
-smpl_var_decl (struct Parser *p);
+struct AstNodeList *
+smpl_var_decl (struct Parser *p,
+							 Agraph_t      *g);
 
-struct NumberList *
-smpl_type_decl (struct Parser *p);
+struct AstNodeList *
+smpl_type_decl (struct Parser *p,
+								Agraph_t      *g);
 
-struct Number *
+struct AstNode *
 smpl_number (struct Parser *p,
+						 Agraph_t      *g,
 						 enum ParserSector ps);
 
-struct Ident *
+struct AstNode *
 smpl_ident (struct Parser *p,
+						Agraph_t      *g,
 						enum ParserSector ps);
 
-struct FuncDecl *
-smpl_func_decl (struct Parser *p);
+struct AstNode *
+smpl_func_decl (struct Parser *p,
+								Agraph_t      *g);
 
-struct IdentList *
-smpl_formal_param (struct Parser *p);
+struct AstNodeList *
+smpl_formal_param (struct Parser *p,
+									 Agraph_t      *g);
 
 struct FuncBody *
-smpl_func_body (struct Parser *p);
+smpl_func_body (struct Parser *p,
+								Agraph_t      *g);
 
-struct StmtList *
-smpl_stat_sequence (struct Parser *p);
+struct AstNodeList *
+smpl_stat_sequence (struct Parser *p,
+										Agraph_t      *g);
 
-struct Stmt *
-smpl_statement (struct Parser *p);
+struct AstNode *
+smpl_statement (struct Parser *p,
+								Agraph_t      *g);
 
-struct Assignment *
-smpl_assignment (struct Parser *p);
+struct AstNode *
+smpl_assignment (struct Parser *p,
+								 Agraph_t      *g);
 
-struct Designator *
-smpl_designator (struct Parser *p);
+struct AstNode *
+smpl_designator (struct Parser *p,
+								 Agraph_t      *g);
 
-struct Result *
-smpl_expression (struct Parser *p);
+struct AstNode *
+smpl_expression (struct Parser *p,
+								 Agraph_t      *g);
 
-struct Result *
-smpl_term (struct Parser *p);
+struct AstNode *
+smpl_term (struct Parser *p,
+					 Agraph_t      *g);
 
-struct Result *
-smpl_factor (struct Parser *p);
+struct AstNode *
+smpl_factor (struct Parser *p,
+						 Agraph_t      *g);
 
-struct FuncCall *
-smpl_func_call (struct Parser *p);
+struct AstNode *
+smpl_func_call (struct Parser *p,
+								Agraph_t      *g);
 
-struct BinOp *
-smpl_relation (struct Parser *p);
+struct AstNode *
+smpl_relation (struct Parser *p,
+							 Agraph_t      *g);
 
-struct IfStmt *
-smpl_if_statement (struct Parser *p);
+struct AstNode *
+smpl_if_statement (struct Parser *p,
+									 Agraph_t      *g);
 
-struct WhileStmt *
-smpl_while_statement (struct Parser *p);
+struct AstNode *
+smpl_while_statement (struct Parser *p,
+											Agraph_t      *g);
 
-struct ReturnStmt *
-smpl_return_statement (struct Parser *p);
+struct AstNode *
+smpl_return_statement (struct Parser *p,
+											 Agraph_t      *g);
 
 /* int */
 /* val (char *c); */
-
-void
-throw_parser_error (enum TokenType t,
-										struct Parser *p,
-										enum ParserSector ps);
 
 /* int */
 /* lookup (VAR vt[MAX_NUM_VARS], */

@@ -1,16 +1,23 @@
 #include "../hdr/parser.h"
 
-// Global symbol lookup table.
-//extern VarTable *vt;
+int node_ctr = 0;
 
 // Tkns that signal a stmt beginning
-const enum TokenType stmt_terminals[] = {LET,
+const enum TokenType stmt_initials[] = {LET,
 																				 CALL,
 																				 IF,
 																				 WHILE,
 																				 RETURN};
-const int num_stmt_terminals =
-	sizeof(stmt_terminals)/sizeof(enum TokenType);
+const int num_stmt_initials =
+	sizeof(stmt_initials)/sizeof(enum TokenType);
+
+// Tkns that signal an factor starting
+const enum TokenType fctr_initials[] = {IDENT,
+																				 NUMBER,
+																				 LPAREN,
+																				 CALL};
+const int num_fctr_initials =
+	sizeof(fctr_initials)/sizeof(enum TokenType);
 
 const char *psr_sectors[] = {
 	"COMPUTATION",
@@ -39,11 +46,12 @@ struct Parser *
 new_parser (char *filename)
 {
 	struct Parser *p   = calloc(1, sizeof(struct Parser));
-	// Allocates heap memory to lexer
+	// Allocs heap memory to lexer
 	p->lxr      = new_lexer(filename);
 	p->curr_tkn = lex_next_tkn(p->lxr);
-	/* p->fout = fopen("", "r"); */
-	/* check_fopen(p->fout); */
+	p->fwarn    = fopen("logs/warn.txt", "w+");
+	check_fopen(p->fwarn);
+
 	return p;
 }
 
@@ -52,7 +60,7 @@ free_parser (struct Parser **p)
 {
 	free_lexer(&((*p)->lxr));
 	// p->curr_tkn is free'd with the lexer
-	/* fclose((*p)->fout); */
+	fclose((*p)->fwarn);
 	free(*p);
 }
 
@@ -64,13 +72,51 @@ peek_tkn (enum TokenType t,
 }
 
 bool
-peek_stmt_terminals (struct Parser *p)
+peek_stmt_initials (struct Parser *p)
 {
-	for (int i = 0; i < num_stmt_terminals; ++i) {
-		if (p->curr_tkn->tkn->type == stmt_terminals[i])
+	for (int i = 0; i < num_stmt_initials; ++i) {
+		if (p->curr_tkn->tkn->type == stmt_initials[i])
 			return true;
 	}
 	return false;
+}
+
+bool
+peek_fctr_initials (struct Parser *p)
+{
+	for (int i = 0; i < num_fctr_initials; ++i) {
+		if (p->curr_tkn->tkn->type == fctr_initials[i])
+			return true;
+	}
+	return false;
+}
+
+void
+throw_parser_error (enum TokenType t,
+										struct Parser *p,
+										enum ParserSector ps)
+{
+	printf("Parser Error: ");
+	printf("On (line:%d,col:%d) ", p->lxr->line, p->lxr->col);
+	printf("expected '%s' but found '%s' ",
+				 tkn_types[t],
+				 p->curr_tkn->tkn->raw);
+	printf("within '%s'\n", psr_sectors[ps]);
+	exit(1);
+}
+
+void
+throw_parser_warning (enum TokenType t,
+											struct Parser *p,
+											enum ParserSector ps)
+{
+	fprintf(p->fwarn,
+					"Parser Warning (Possible Extraneous Character):\n On (line:%d,col:%d) expected '%s' but found '%s' within '%s'\n",
+					p->lxr->line,
+					p->lxr->col,
+					tkn_types[t],
+					p->curr_tkn->tkn->raw,
+					psr_sectors[ps]);
 }
 
 void
@@ -86,57 +132,67 @@ consume_tkn (enum TokenType t,
 }
 
 struct Ast *
-parse (struct Parser *p)
+parse (struct Parser *p,
+			 Agraph_t      *tlg)
 {
-	// ONLY ast and ast->agraph calloc'd here
-	struct Ast *ast = new_ast();
-	ast->root       = smpl_computation(p, ast);
+	// ast->graph created here
+	struct Ast *ast = new_ast(tlg);
+	ast->root       = smpl_computation(p, ast->graph);
 
 	return ast;
 }
 
 // computation = "main" { varDecl } { funcDecl }
 // "{" statSequence "}" "."
-AstNode *
+struct AstNode *
 smpl_computation (struct Parser *p,
-									struct Ast *ast)
+									Agraph_t      *g)
 {
-	// ONLY c, vdl, and fdl calloc'd here
-	struct Computation *c = new_computation();
+	struct AstNode *node = new_ast_node(g, node_ctr++, CMPTN);
+	// c->vdl, c->fdl calloc'd here
+	node->computation = new_computation();
 	consume_tkn(MAIN, p, COMPUTATION);
 	while ( peek_tkn(VAR, p) ||	peek_tkn(ARRAY, p) ) {
-		push_vd(c->var_decls, smpl_var_decl(p));
+		concat_ast_list(node->computation->var_decls,
+										smpl_var_decl(p, g));
 	}
 	while ( peek_tkn(FUNCTION, p) || peek_tkn(VOID, p) ) {
-		push_fd(c->func_decls, smpl_func_decl(p));
+		push_ast_node(node->computation->func_decls,
+									smpl_func_decl(p, g));
 	}
 	consume_tkn(LBRACE, p, COMPUTATION);
-	c->stmts = smpl_stat_sequence(p);
+	node->computation->stmts = smpl_stat_sequence(p, g);
 	consume_tkn(RBRACE, p, COMPUTATION);
 	consume_tkn(PERIOD, p, COMPUTATION);
 
-	struct AstNode *node;
-	node = new_ast_node(ast->agraph, "computation");
-	node->computation = c;
 	return node;
 }
 
 // varDecl = typeDecl ident { "," ident } ";"
-struct VarDecl *
-smpl_var_decl (struct Parser *p)
+struct AstNodeList *
+smpl_var_decl (struct Parser *p,
+							 Agraph_t      *g)
 {
-	// ONLY vd and il calloc'd here
-	struct VarDecl *vd = new_vd();
-	vd->dimensions = smpl_type_decl(p);
-	push_ident(vd->identifiers, smpl_ident(p, VAR_DECL));
+	struct AstNodeList *nodes = new_ast_node_list();
+	push_ast_node(nodes, new_ast_node(g, node_ctr++, VARDECL));
+	nodes->head->var_decl = new_vd();
+	nodes->head->var_decl->dims = smpl_type_decl(p, g);
+	nodes->head->var_decl->ident = smpl_ident(p, g, VAR_DECL);
+	struct AstNode *i;
 
 	while ( peek_tkn(COMMA, p) ) {
+
 		consume_tkn(COMMA, p, VAR_DECL);
-		push_ident(vd->identifiers, smpl_ident(p, VAR_DECL));
+		i = new_ast_node(g, node_ctr++, VARDECL);
+		push_ast_node(nodes, i);
+		i->var_decl = new_vd();
+		i->var_decl->ident = smpl_ident(p, g, VAR_DECL);
+		// TRYING SHALLOW COPY INSTEAD OF DEEP COPY OF DIMS
+		i->var_decl->dims = nodes->head->var_decl->dims;
 	}
 	consume_tkn(SEMICOLON, p, VAR_DECL);
 
-	return vd;
+	return nodes;
 }
 
 // typeDecl = "var" |
@@ -146,20 +202,23 @@ smpl_var_decl (struct Parser *p)
 //  the list of dimensions of the identifier. For scalars
 //  we would just  have an empty list, i.e.
 //  list->head = NULL.
-struct NumberList *
-smpl_type_decl (struct Parser *p)
+struct AstNodeList *
+smpl_type_decl (struct Parser *p,
+								Agraph_t      *g)
 {
-	// ONLY nl calloc'd here
-	struct NumberList *dims = new_num_list();
+	struct AstNodeList *nodes = new_ast_node_list();
 	if ( peek_tkn(VAR, p) ) {
+
 		consume_tkn(VAR, p, TYPE_DECL);
-		dims->head = NULL; // i.e. a scalar
+		nodes->head = NULL; // i.e. a scalar
 
 	} else if ( peek_tkn(ARRAY, p) ) {
+
 		consume_tkn(ARRAY, p, TYPE_DECL);
 		do {
+
 			consume_tkn(LBRACKET, p, TYPE_DECL);
-			push_num(dims, smpl_number(p, TYPE_DECL));
+			push_ast_node(nodes, smpl_number(p, g, TYPE_DECL));
 			consume_tkn(RBRACKET, p, TYPE_DECL);
 		} while ( peek_tkn(LBRACKET, p) );
 
@@ -167,279 +226,301 @@ smpl_type_decl (struct Parser *p)
 		throw_parser_error(p->curr_tkn->tkn->type, p, TYPE_DECL);
 	}
 
-	return dims;
+	return nodes;
 }
 
-struct Number *
+struct AstNode *
 smpl_number (struct Parser *p,
+						 Agraph_t      *g,
 						 enum ParserSector ps)
 {
-	// ONLY num calloc'd here
-	struct Number *num = new_num();
+	struct AstNode *node = new_ast_node(g, node_ctr++, NUM);
+	node->number = new_number();
+	node->number->val = p->curr_tkn->tkn->val;
 	consume_tkn(NUMBER, p, ps);
-	num->val = p->curr_tkn->tkn->val;
-	return num;
+
+	return node;
 }
 
-struct Ident *
+struct AstNode *
 smpl_ident (struct Parser *p,
+						Agraph_t      *g,
 						enum ParserSector ps)
 {
-	// ONLY ident and name calloc'd here
-	struct Ident *ident = new_ident();
-	consume_tkn(IDENT, p, ps);
+	struct AstNode *node = new_ast_node(g, node_ctr++, IDNT);
+	// ident->name calloc'd here
+	node->identifier = new_ident();
 	for (int i = 0; i < MAX_VAR_NAME_LEN; ++i) {
-		ident->name[i] = p->curr_tkn->tkn->raw[i];
+		node->identifier->name[i] = p->curr_tkn->tkn->raw[i];
 	}
-	return ident;
+	consume_tkn(IDENT, p, ps);
+
+	return node;
 }
 
 // funcDecl =
 // [ "void" ] "function"
 // ident formalParam ";" funcBody ";"
-struct FuncDecl *
-smpl_func_decl (struct Parser *p)
+struct AstNode *
+smpl_func_decl (struct Parser *p,
+								Agraph_t      *g)
 {
-	// ONLY fd calloc'd here
-	struct FuncDecl *fd = new_fd();
+	struct AstNode *node =
+		new_ast_node(g, node_ctr++, FUNCDECL);
+	node->func_decl = new_fd();
 	if ( peek_tkn(VOID, p) ) {
 		consume_tkn(VOID, p, FUNC_DECL);
-		fd->is_void = true;
+		node->func_decl->is_void = true;
 	}
 	consume_tkn(FUNCTION, p, FUNC_DECL);
-	fd->name    = smpl_ident(p, FUNC_DECL);
-	fd->params  = smpl_formal_param(p);
+	node->func_decl->fn_ident =
+		smpl_ident(p, g, FUNC_DECL);
+
+	node->func_decl->param_idents =
+		smpl_formal_param(p, g);
+
 	consume_tkn(SEMICOLON, p, FUNC_DECL);
-	fd->body    = smpl_func_body(p);
+	node->func_decl->body =
+		smpl_func_body(p, g);
 	consume_tkn(SEMICOLON, p, FUNC_DECL);
 
-	return fd;
+	return node;
 }
 
 // formalParam = "(" [ident { "," ident }] ")"
-struct IdentList *
-smpl_formal_param (struct Parser *p)
+struct AstNodeList *
+smpl_formal_param (struct Parser *p,
+									 Agraph_t      *g)
 {
-	// ONLY il calloc'd here
-	struct IdentList *params = new_ident_list();
+	struct AstNodeList *nodes = new_ast_node_list();
 	consume_tkn(LPAREN, p, FORMAL_PARAM);
 	if ( peek_tkn(IDENT, p) ) {
-		push_ident(params, smpl_ident(p, FORMAL_PARAM));
+
+		push_ast_node(nodes,
+									smpl_ident(p, g, FORMAL_PARAM));
 		while ( peek_tkn(COMMA, p) ) {
+
 			consume_tkn(COMMA, p, FORMAL_PARAM);
-			push_ident(params, smpl_ident(p, FORMAL_PARAM));
+			push_ast_node(nodes,
+										smpl_ident(p, g, FORMAL_PARAM));
 		} // endwhile
 	} // endif
 	consume_tkn(RPAREN, p, FORMAL_PARAM);
 
-	return params;
+	return nodes;
 }
 
 // funcBody = { varDecl } "{" [ statSequence ] "}"
 struct FuncBody *
-smpl_func_body (struct Parser *p)
+smpl_func_body (struct Parser *p,
+								Agraph_t      *g)
 {
-	// ONLY fb and vdl calloc'd here
+	// fb->local_vars calloc'd here
 	struct FuncBody *fb = new_func_body();
-	while ( peek_tkn(VAR, p) ||
-					peek_tkn(ARRAY, p) ) {
-
-		// new vdln calloc'd here
-		push_vd(fb->local_vars, smpl_var_decl(p));
+	while ( peek_tkn(VAR, p) || peek_tkn(ARRAY, p) ) {
+		concat_ast_list(fb->local_vars, smpl_var_decl(p, g));
 	}
 	consume_tkn(LBRACE, p, FUNC_BODY);
-	fb->stmts = smpl_stat_sequence(p);
+	fb->stmts = smpl_stat_sequence(p, g);
 	consume_tkn(RBRACE, p, FUNC_BODY);
 
 	return fb;
 }
 
 // statSequence = statement { ";" statement } [ ";" ]
-struct StmtList *
-smpl_stat_sequence (struct Parser *p)
+struct AstNodeList *
+smpl_stat_sequence (struct Parser *p,
+										Agraph_t      *g)
 {
-	// ONLY sl calloc'd here
-	struct StmtList *sl = new_sl();
-	push_stmt(sl, smpl_statement(p));
+	struct AstNodeList *nodes = new_ast_node_list();
+	push_ast_node(nodes, smpl_statement(p, g));
 	while ( peek_tkn(SEMICOLON, p) ) {
 
 		consume_tkn(SEMICOLON, p, STAT_SEQ);
-		if ( peek_stmt_terminals(p) ) {
-			push_stmt(sl, smpl_statement(p));
+		if ( peek_stmt_initials(p) ) {
+			push_ast_node(nodes, smpl_statement(p, g));
 		}
 	}
-	return sl;
+
+	return nodes;
 }
 
 // statement =
 // assignment | "void" funcCall | ifStatement |
 // whileStatement | returnStatement
-struct Stmt *
-smpl_statement (struct Parser *p)
+struct AstNode *
+smpl_statement (struct Parser *p,
+								Agraph_t      *g)
 {
-	// ONLY Stmt calloc'd here
-	struct Stmt *s = new_stmt();
+	struct AstNode *node = NULL;
 	if ( peek_tkn(LET, p) ) {
-
-		s->assignment = smpl_assignment(p);
+		node = smpl_assignment(p, g);
 	} else if ( peek_tkn(CALL, p) ) {
-
-		s->func_call = smpl_func_call(p);
+		node = smpl_func_call(p, g);
 	} else if ( peek_tkn(IF, p) ) {
-
-		s->if_stmt = smpl_if_statement(p);
+		node = smpl_if_statement(p, g);
 	} else if ( peek_tkn(WHILE, p) ) {
-
-		s->while_stmt = smpl_while_statement(p);
+		node = smpl_while_statement(p, g);
 	} else if ( peek_tkn(RETURN, p) ) {
-
-		s->return_stmt = smpl_return_statement(p);
+		node = smpl_return_statement(p, g);
 	} else {
-		throw_parser_error(p->curr_tkn->tkn->type, p, STMT);
+		throw_parser_warning(p->curr_tkn->tkn->type, p, STMT);
 	}
-	return s;
+
+	return node;
 }
 
 // assignment = "let" designator "<-" expression
-struct Assignment *
-smpl_assignment (struct Parser *p)
+struct AstNode *
+smpl_assignment (struct Parser *p,
+								 Agraph_t      *g)
 {
-	// ONLY assignment calloc'd here
-	struct Assignment *a = new_assignment();
+	struct AstNode *node = new_ast_node(g, node_ctr++, ASSMT);
+	node->assignment = new_assignment();
 	consume_tkn(LET, p,	ASSIGNMENT);
-	a->lhs = smpl_designator(p);
+	node->assignment->lhs = smpl_designator(p, g);
 	consume_tkn(LARROW, p, ASSIGNMENT);
-	a->rhs = smpl_expression(p);
-	
-	return a;
+	node->assignment->rhs = smpl_expression(p, g);
+
+	return node;
 }
 
 // designator = ident{ "[" expression "]" }
-struct Designator *
-smpl_designator (struct Parser *p)
+struct AstNode *
+smpl_designator (struct Parser *p,
+								 Agraph_t      *g)
 {
-	// ONLY designator and result list calloc'd here
-	struct Designator *d = new_designator();
-	d->ident = smpl_ident(p, DESIGNATOR);
+	struct AstNode *node = new_ast_node(g, node_ctr++, DSGNTR);
+	// d->indices calloc'd here
+	node->designator = new_designator();
+	node->designator->ident = smpl_ident(p, g, DESIGNATOR);
 	while ( peek_tkn(LBRACKET, p) ) {
 
 		consume_tkn(LBRACKET, p, DESIGNATOR);
-		push_result(d->indices, smpl_expression(p));
+		push_ast_node(node->designator->indices,
+									smpl_expression(p, g));
 		consume_tkn(RBRACKET, p, DESIGNATOR);
 	}
-	/////////////////////////////////////////////////////////
-	// CHECK: CHECK for d->indices==NULL ?? Y/N??     ///// /
-	/////////////////////////////////////////////////////////
-	return d;
+	/* if (node->designator->indices->head == NULL) { */
+	/* 	free(node->designator->indices); */
+	/* } */
+
+	return node;
 }
 
 // expression = term {("+" | "-") term}
-struct Result *
-smpl_expression (struct Parser *p)
+struct AstNode *
+smpl_expression (struct Parser *p,
+								 Agraph_t      *g)
 {
-	// ONLY the `result` is calloc'd here
-	struct Result *r = new_res();
-	r->bin_op = new_bin_op();
-	r->bin_op->lhs = smpl_term(p);
-	while ( peek_tkn(PLUS, p) ||
-					peek_tkn(MINUS, p) ) {
+	struct AstNode *node = smpl_term(p, g);
+	struct AstNode *tmp;
+	while ( peek_tkn(PLUS, p) || peek_tkn(MINUS, p) ) {
 
-		r->bin_op->op = peek_tkn(PLUS, p) ? "+" : "-";
-		if ( peek_tkn(PLUS, p) ) {
-			consume_tkn(PLUS, p, EXPRESSION);
-		} else {
-			consume_tkn(MINUS, p, EXPRESSION);
-		}
-		r->bin_op->rhs = smpl_term(p);
+		tmp = node;
+		node = new_ast_node(g, node_ctr++, BINOP);
+		node->bin_op = new_bin_op();
+		assert(tmp != node);
+		node->bin_op->opa = tmp;
+
+		snprintf(node->bin_op->op, 2, "%s", peek_tkn(PLUS, p) ? "+" : "-");
+		consume_tkn(p->curr_tkn->tkn->type, p, EXPRESSION);
+		node->bin_op->opb = smpl_term(p, g);
 	}
-	return r;
+
+	return node;
 }
 
 // term = factor {("*" | "/") factor}
-struct Result *
-smpl_term (struct Parser *p)
+struct AstNode *
+smpl_term (struct Parser *p,
+					 Agraph_t      *g)
 {
-	// ONLY the `result` is calloc'd here
-	struct Result *r = new_res();
-	r->bin_op = new_bin_op();
-	r->bin_op->lhs = smpl_factor(p);
-	while ( peek_tkn(ASTERISK, p) ||
-					peek_tkn(SLASH, p) ) {
+	struct AstNode *node = smpl_factor(p, g);
+	struct AstNode *tmp;
+	while ( peek_tkn(ASTERISK, p) || peek_tkn(SLASH, p) ) {
 
-		r->bin_op->op =
-			peek_tkn(ASTERISK, p) ? "*" : "/";
-		if ( peek_tkn(ASTERISK, p) ) {
-			consume_tkn(ASTERISK, p, TERM);
-		} else {
-			consume_tkn(SLASH, p, TERM);
-		}
-		r->bin_op->rhs = smpl_factor(p);
+		tmp = node;
+		node = new_ast_node(g, node_ctr++, BINOP);
+		node->bin_op = new_bin_op();
+		node->bin_op->opa = tmp;
+
+		snprintf(node->bin_op->op, 2, "%s", peek_tkn(ASTERISK, p) ? "*" : "/");
+		consume_tkn(p->curr_tkn->tkn->type, p, EXPRESSION);
+		node->bin_op->opb = smpl_factor(p, g);
 	}
-	return r;
+
+	return node;
 }
 
 // factor = designator | number | "(" expression ")" |
 // funcCall
 // NOTE: only "non-void" fns may be called here.
-struct Result *
-smpl_factor (struct Parser *p)
+struct AstNode *
+smpl_factor (struct Parser *p,
+						 Agraph_t      *g)
 {
-	// ONLY the `result`, its `binop`, and the binop's `op`
-	// are calloc'd here
-	struct Result *r = new_res();
+	struct AstNode *node = NULL;
 	if ( peek_tkn(IDENT, p) ) {
-
-		r->des = smpl_designator(p);
+		node = smpl_designator(p, g);
 	} else if ( peek_tkn(NUMBER, p) ) {
-
-		r->num = smpl_number(p, FACTOR);
+		node = smpl_number(p, g, FACTOR);
 	} else if ( peek_tkn(LPAREN, p) ) {
 
 		consume_tkn(LPAREN, p, FACTOR);
-		r = smpl_expression(p);
+		node = smpl_expression(p, g);
 		consume_tkn(RPAREN, p, FACTOR);
 	} else if ( peek_tkn(CALL, p) ) {
-
-		r->func_call = smpl_func_call(p);
+		node = smpl_func_call(p, g);
 	} else {
 		throw_parser_error(p->curr_tkn->tkn->type, p, FACTOR);
 	}
 
-	return r;
+	return node;
 }
 
 // funcCall =
 // "call" ident [ "(" [expression
 // { "," expression } ] ")" ]
 // fns without params don't need "()" but can have them!
-struct FuncCall *
-smpl_func_call (struct Parser *p)
+struct AstNode *
+smpl_func_call (struct Parser *p,
+								Agraph_t      *g)
 {
-	// ONLY fc and fc->args calloc'd here
-	struct FuncCall *fc = new_func_call();
+	struct AstNode *node =
+		new_ast_node(g, node_ctr++, FUNCCALL);
+	// fc->args calloc'd here
+	node->func_call = new_func_call();
 	consume_tkn(CALL, p, FUNC_CALL);
-	fc->name = smpl_ident(p, FUNC_CALL);
+	node->func_call->ident = smpl_ident(p, g, FUNC_CALL);
 	if ( peek_tkn(LPAREN, p) ) {
 
 		consume_tkn(LPAREN, p, FUNC_CALL);
-		push_result(fc->args, smpl_expression(p));
-		while ( peek_tkn(COMMA, p) ) {
+		if ( peek_fctr_initials(p) ){
 
-			consume_tkn(COMMA, p, FUNC_CALL);
-			push_result(fc->args, smpl_expression(p));
+			push_ast_node(node->func_call->args,
+										smpl_expression(p, g));
+			while ( peek_tkn(COMMA, p) ) {
+
+				consume_tkn(COMMA, p, FUNC_CALL);
+				push_ast_node(node->func_call->args,
+											smpl_expression(p, g));
+			}
 		}
 		consume_tkn(RPAREN, p, FUNC_CALL);
 	}
-	return fc;
+	return node;
 }
 
 // relation = expression relOp expression
-struct BinOp *
-smpl_relation (struct Parser *p)
+struct AstNode *
+smpl_relation (struct Parser *p,
+							 Agraph_t      *g)
 {
-	// ONLY bo and bo->op calloc'd here
-	struct BinOp *bo = new_bin_op();
-	bo->lhs = smpl_expression(p);
+	struct AstNode *node = new_ast_node(g, node_ctr++, BINOP);
+	// bo->op calloc'd here
+	node->bin_op = new_bin_op();
+	node->bin_op->opa = smpl_expression(p, g);
 	if ( peek_tkn(OP_INEQ, p) ||
 			 peek_tkn(OP_EQ, p) ||
 			 peek_tkn(OP_LT, p) ||
@@ -447,63 +528,68 @@ smpl_relation (struct Parser *p)
 			 peek_tkn(OP_GT, p) ||
 			 peek_tkn(OP_GE, p) ) {
 
-		consume_tkn(p->curr_tkn->tkn->type, p, RELATION);
 		// the op can only be two chars
-		strncpy(bo->op, p->curr_tkn->tkn->raw, 2);
+		strncpy(node->bin_op->op, p->curr_tkn->tkn->raw, 2);
+		consume_tkn(p->curr_tkn->tkn->type, p, RELATION);
 	}
-	bo->rhs = smpl_expression(p);
+	node->bin_op->opb = smpl_expression(p, g);
 
-	return bo;
+	return node;
 }
 
 // ifStatement =
 // "if" relation "then"
 // statSequence [ "else" statSequence ] "fi"
-struct IfStmt *
-smpl_if_statement (struct Parser *p)
+struct AstNode *
+smpl_if_statement (struct Parser *p,
+									 Agraph_t      *g)
 {
-	// ONLY ifstmt `is` calloc'd here
-	struct IfStmt *is = new_if_stmt();
+	struct AstNode *node = new_ast_node(g, node_ctr++, IFSTMT);
+	node->if_stmt = new_if_stmt();
 	consume_tkn(IF, p, IF_STMT);
-	is->condition = smpl_relation(p);
+	node->if_stmt->condition = smpl_relation(p, g);
 	consume_tkn(THEN, p, IF_STMT);
-	is->then_stmts = smpl_stat_sequence(p);
+	node->if_stmt->then_stmts = smpl_stat_sequence(p, g);
 	if ( peek_tkn(ELSE, p) ) {
 
 		consume_tkn(ELSE, p, IF_STMT);
-		is->else_stmts = smpl_stat_sequence(p);
+		node->if_stmt->else_stmts = smpl_stat_sequence(p, g);
 	}
 	consume_tkn(FI, p, IF_STMT);
 
-	return is;
+	return node;
 }
 
 // whileStatement = "while" relation "do"
 // StatSequence "od"
-struct WhileStmt *
-smpl_while_statement (struct Parser *p)
+struct AstNode *
+smpl_while_statement (struct Parser *p,
+											Agraph_t      *g)
 {
-	// ONLY whilestmt `ws` calloc'd here
-	struct WhileStmt *ws = new_while_stmt();
+	struct AstNode *node = new_ast_node(g, node_ctr++, WHSTMT);
+	node->while_stmt = new_while_stmt();
 	consume_tkn(WHILE, p, WHILE_STMT);
-	ws->condition = smpl_relation(p);
+	node->while_stmt->condition =
+		smpl_relation(p, g);
 	consume_tkn(DO, p, WHILE_STMT);
-	ws->do_stmts  = smpl_stat_sequence(p);
+	node->while_stmt->do_stmts  =
+		smpl_stat_sequence(p, g);
 	consume_tkn(OD, p, WHILE_STMT);
 
-	return ws;
+	return node;
 }
 
 // returnStatement = "return" [ expression ]
-struct ReturnStmt *
-smpl_return_statement (struct Parser *p)
+struct AstNode *
+smpl_return_statement (struct Parser *p,
+											 Agraph_t      *g)
 {
-	// ONLY returnstmt `rs` calloc'd here
-	struct ReturnStmt *rs = new_return_stmt();
+	struct AstNode *node = new_ast_node(g, node_ctr++, RESTMT);
+	node->ret_stmt = new_return_stmt();
 	consume_tkn(RETURN, p, RETURN_STMT);
-	rs->ret_val = smpl_expression(p);
+	node->ret_stmt->ret_val = smpl_expression(p, g);
 
-	return rs;
+	return node;
 }
 
 /* int */
@@ -524,17 +610,3 @@ smpl_return_statement (struct Parser *p)
 /* 	} */
 /* 	return -1; */
 /* } */
-
-void
-throw_parser_error (enum TokenType t,
-										struct Parser *p,
-										enum ParserSector ps)
-{
-	printf("Parser Error: ");
-	printf("On (line:%d,col:%d) ", p->lxr->line, p->lxr->col);
-	printf("expected '%s' but found '%s' ",
-				 tkn_types[t],
-				 p->curr_tkn->tkn->raw);
-	printf("within '%s'", psr_sectors[ps]);
-	exit(1);
-}

@@ -10,8 +10,6 @@
 #define MAX_TKN_LEN 64
 #endif//MAX_TKN_LEN
 
-#define TO_STR(type) return #type
-
 enum TokenType {
 	IDENT,
 	NUMBER,

@@ -76,8 +76,9 @@ struct TokenNode *
 new_token_node (struct Token *t)
 {
 	struct TokenNode *tn = calloc(1,	sizeof(struct TokenNode));
-	tn->tkn       = t;
-	tn->next      = NULL;
+	tn->tkn              = t;
+	tn->next             = NULL;
+
 	return tn;
 }
 
@@ -91,7 +92,8 @@ struct TokenList *
 new_token_list ()
 {
 	struct TokenList *tl = calloc(1, sizeof(struct TokenList));
-	tl->head      = NULL;
+	tl->head             = NULL;
+
 	return tl;
 }
 

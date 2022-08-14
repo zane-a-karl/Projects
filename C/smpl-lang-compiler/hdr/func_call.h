@@ -1,15 +1,17 @@
 #ifndef _FUNC_CALL_H_
 #define _FUNC_CALL_H_
 
-#include "../hdr/identifier_list.h"
-#include "../hdr/result_list.h"
+#include "../hdr/ast.h"
 
 struct FuncCall {
-	struct Ident      *name;
-	struct ResultList *args;
+	struct AstNode     *ident;
+	struct AstNodeList *args;
 };
 
 struct FuncCall *
 new_func_call ();
+
+struct FuncCall *
+deep_copy_func_call (struct FuncCall *src);
 
 #endif//_FUNC_CALL_H_

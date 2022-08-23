@@ -3,24 +3,25 @@
 
 #include "../hdr/number.h"
 #include "../hdr/identifier.h"
-
 #include "../hdr/computation.h"
 #include "../hdr/var_decl.h"
 #include "../hdr/func_decl.h"
 #include "../hdr/assignment.h"
-#include "../hdr/designator.h"
+#include "../hdr/array_access.h"
 #include "../hdr/bin_op.h"
 #include "../hdr/func_call.h"
 #include "../hdr/if_stmt.h"
 #include "../hdr/while_stmt.h"
 #include "../hdr/return_stmt.h"
 
+#include "../hdr/interpreter_ctx.h"
+
 #include <graphviz/cgraph.h>
 
 enum AstNodeType {
 	IDNT,
 	NUM,
-	DSGNTR,
+	ARRACC,
   VARDECL,
 	FUNCDECL,
 	CMPTN,
@@ -47,7 +48,7 @@ struct AstNode {
 		struct FuncDecl    *func_decl;
 		struct Ident       *identifier;
 		struct Assignment  *assignment;
-		struct Designator  *designator;
+		struct ArrayAccess *arr_acc;
 		struct BinOp       *bin_op;
 		struct FuncCall    *func_call;
 		struct IfStmt      *if_stmt;
@@ -91,67 +92,14 @@ concat_ast_list (struct AstNodeList *anl,
 								 struct AstNodeList *new);
 
 void
-create_ident_agedge_set (char *label,
-												 int len,
-												 struct AstNode *n);
-
-void
-create_num_agedge_set (char *label,
-											 int len,
-											 struct AstNode *n);
-
-void
-create_designator_agedge_set (char *label,
-															int len,
-															struct AstNode *n);
-
-void
-create_var_decl_agedge_set (char *label,
-														int len,
-														struct AstNode *n);
-
-void
-create_func_decl_agedge_set (char *label,
-														 int len,
-														 struct AstNode *n);
-
-void
-create_computation_agedge_set (char *label,
-															 int len,
-															 struct AstNode *n);
-
-void
-create_bin_op_agedge_set (char *label,
-													int len,
-													struct AstNode *n);
-
-void
-create_assignment_agedge_set (char *label,
-															int len,
-															struct AstNode *n);
-
-void
-create_func_call_agedge_set (char *label,
-														 int len,
-														 struct AstNode *n);
-
-void
-create_if_stmt_agedge_set (char *label,
-													 int len,
-													 struct AstNode *n);
-
-void
-create_while_stmt_agedge_set (char *label,
-															int len,
-															struct AstNode *n);
-
-void
-create_return_stmt_agedge_set (char *label,
-															 int len,
-															 struct AstNode *n);
-
-void
 create_agedge_set (struct AstNode *n);
+
+int
+interpret_ast_node (struct AstNode *n,
+										struct InterpreterCtx *ictx);
+
+int
+interpret_ast (struct Ast *ast);
 
 void
 free_ast_node (struct AstNode *node);

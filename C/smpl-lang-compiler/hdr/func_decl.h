@@ -2,6 +2,7 @@
 #define _FUNC_DECL_H_
 
 #include "../hdr/ast.h"
+#include "../hdr/interpreter_ctx.h"
 
 #include <stdbool.h>
 #include <stdlib.h>
@@ -31,5 +32,14 @@ deep_copy_func_body (struct FuncBody *src);
 
 struct FuncDecl *
 deep_copy_func_decl (struct FuncDecl *src);
+
+void
+create_func_decl_agedge_set (char *label,
+														 int len,
+														 struct AstNode *n);
+
+int
+interpret_func_decl (struct AstNode *n,
+										 struct InterpreterCtx *ictx);
 
 #endif//_FUNC_DECL_H_

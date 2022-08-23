@@ -3,7 +3,7 @@
 char *ast_node_types[] = {
 	"Identifier",
 	"Number",
-	"Designator",
+	"ArrayAccess",
 	"VariableDeclaration",
 	"FunctionDeclaration",
 	"Computation",
@@ -70,8 +70,8 @@ deep_copy_ast_node (struct AstNode *src)
 	case NUM:
 		dst->number = deep_copy_number(src->number);
 		break;
-	case DSGNTR:
-		dst->designator = deep_copy_designator(src->designator);
+	case ARRACC:
+		dst->arr_acc = deep_copy_array_access(src->arr_acc);
 		break;
   case VARDECL:
 		dst->var_decl = deep_copy_var_decl(src->var_decl);
@@ -105,7 +105,6 @@ deep_copy_ast_node (struct AstNode *src)
 		exit(1);
 		break;
 	}
-
 	return dst;
 }
 
@@ -155,245 +154,6 @@ concat_ast_list (struct AstNodeList *anl,
 	an->next = new_list->head;
 }
 
-void
-create_ident_agedge_set (char *label,
-												 int len,
-												 struct AstNode *n)
-{
-	snprintf(label, len, "%s", n->identifier->name);
-	agset(n->self, "label", label);
-}
-
-void
-create_num_agedge_set (char *label,
-											 int len,
-											 struct AstNode *n)
-{
-	snprintf(label, len, "%i", n->number->val);
-	agset(n->self, "label", label);
-}
-
-void
-create_designator_agedge_set (char *label,
-															int len,
-															struct AstNode *n)
-{
-	if ( n->designator->indices->head != NULL ) {
-		snprintf(label, len, "Array Access '%s'", n->designator->ident->identifier->name);
-	} else {
-		snprintf(label, len, "Access '%s'", n->designator->ident->identifier->name);
-	}
-	agdelnode(n->graph, n->designator->ident->self);
-	/* create_agedge_set(n->designator->ident); */
-	char *tmp = calloc(len, sizeof(char));
-	Agedge_t *edge;
-	int idx_num = 0;
-	for (struct AstNode *i = n->designator->indices->head; i != NULL; i = i->next) {
-
-		snprintf(tmp, len, "%s", "[-]");
-		strlcat(label, tmp, strlen(label) + strlen(tmp) + 1);
-		edge = agedge(n->graph, n->self, i->self, tmp, TRUE);
-		snprintf(tmp, len, "Idx#%d", idx_num++);
-		agset(edge, "label", "");
-		create_agedge_set(i);
-	}
-	agset(n->self, "label", label);
-	free(tmp);
-}
-
-void
-create_var_decl_agedge_set (char *label,
-														int len,
-														struct AstNode *n)
-{
-	char *tmp = calloc(len, sizeof(char));
-	snprintf(label, len, "Declare '%s'", n->var_decl->ident->identifier->name);
-	/* create_agedge_set(n->var_decl->ident); */
-	agdelnode(n->graph, n->var_decl->ident->self);
-	for (struct AstNode *i = n->var_decl->dims->head; i != NULL; i = i->next) {
-
-		snprintf(tmp, len, "[%i]", i->number->val);
-		strlcat(label, tmp, strlen(label) + strlen(tmp) + 1);
-		/* create_agedge_set(i); */
-		agdelnode(n->graph, i->self);
-	}
-	free(tmp);
-	agset(n->self, "label", label);
-}
-
-void
-create_func_decl_agedge_set (char *label,
-														 int len,
-														 struct AstNode *n)
-{
-	Agedge_t *edge;
-	snprintf(label, len, "Function '%s'", n->func_decl->fn_ident->identifier->name);
-	/* create_agedge_set(n->func_decl->fn_ident); */
-	agdelnode(n->graph, n->func_decl->fn_ident->self);
-	agset(n->self, "label", label);
-	for (struct AstNode *i = n->func_decl->param_idents->head; i != NULL; i = i->next) {
-
-		edge = agedge(n->graph, n->self, i->self, "", TRUE);
-		agset(edge, "label", "Param");
-		create_agedge_set(i);
-	}
-	for (struct AstNode *i = n->func_decl->body->local_vars->head; i != NULL; i = i->next) {
-
-		edge = agedge(n->graph, n->self, i->self, "", TRUE);
-		agset(edge, "label", "Local Var");
-		create_agedge_set(i);
-	}
-	for (struct AstNode *i = n->func_decl->body->stmts->head; i != NULL; i = i->next) {
-
-		edge = agedge(n->graph, n->self, i->self, "", TRUE);
-		agset(edge, "label", "Body");
-		create_agedge_set(i);
-	}
-}
-
-void
-create_computation_agedge_set (char *label,
-															 int len,
-															 struct AstNode *n)
-{
-	agset(n->self, "label", ast_node_types[CMPTN]);
-	Agedge_t *edge;
-	for (struct AstNode *i = n->computation->var_decls->head; i != NULL; i = i->next) {
-
-		snprintf(label, len, "%s", ast_node_types[VARDECL]);
-		edge = agedge(n->graph, n->self, i->self, NULL, TRUE);
-		agset(edge, "label", label);
-		agset(edge, "color", "blue");
-		create_agedge_set(i);
-	}
-	memset(label, '\0', len*sizeof(char));
-	for (struct AstNode *i = n->computation->func_decls->head; i != NULL; i = i->next) {
-
-		snprintf(label, len, "%s", ast_node_types[FUNCDECL]);
-		edge = agedge(n->graph, n->self, i->self, NULL, TRUE);
-		agset(edge, "label", label);
-		agset(edge, "color", "yellow");
-		create_agedge_set(i);
-	}
-	memset(label, '\0', len*sizeof(char));
-	for (struct AstNode *i = n->computation->stmts->head; i != NULL; i = i->next) {
-
-		snprintf(label, len, "%s", "Statement");
-		edge = agedge(n->graph, n->self, i->self, NULL, TRUE);
-		agset(edge, "label", label);
-		create_agedge_set(i);
-	}
-}
-
-void
-create_bin_op_agedge_set (char *label,
-													int len,
-													struct AstNode *n)
-{
-	Agedge_t *edge;
-	char *tmp = calloc(len, sizeof(char));
-	snprintf(tmp, len, "%s", n->bin_op->op);
-	agset(n->self, "label", tmp);
-	edge = agedge(n->graph, n->self, n->bin_op->opa->self, "OP_A", TRUE);
-	agset(edge, "label", "OP_A");
-	create_agedge_set(n->bin_op->opa);
-	edge = agedge(n->graph, n->self, n->bin_op->opb->self, "OP_B", TRUE);
-	agset(edge, "label", "OP_B");
-	create_agedge_set(n->bin_op->opb);
-	free(tmp);	
-}
-
-void
-create_assignment_agedge_set (char *label,
-															int len,
-															struct AstNode *n)
-{
-	Agedge_t *edge;
-	agset(n->self, "label", ast_node_types[ASSMT]);
-	edge = agedge(n->graph, n->self, n->assignment->lhs->self, "LHS", TRUE);
-	agset(edge, "label", "LHS");
-	create_agedge_set(n->assignment->lhs);
-	edge = agedge(n->graph, n->self, n->assignment->rhs->self, "RHS", TRUE);
-	agset(edge, "label", "RHS");
-	create_agedge_set(n->assignment->rhs);
-}
-
-void
-create_func_call_agedge_set (char *label,
-														 int len,
-														 struct AstNode *n)
-{
-	Agedge_t *edge;
-	snprintf(label, len, "Call '%s'", n->func_call->ident->identifier->name);
-	agset(n->self, "label", label);
-	/* create_agedge_set(n->func_call->ident); */
-	agdelnode(n->graph, n->func_call->ident->self);
-	for (struct AstNode *i = n->func_call->args->head; i != NULL; i = i->next) {
-
-		edge = agedge(n->graph, n->self, i->self, NULL, TRUE);
-		agset(edge, "label", "Argument");
-		create_agedge_set(i);
-	}
-}
-
-void
-create_if_stmt_agedge_set (char *label,
-													 int len,
-													 struct AstNode *n)
-{
-	agset(n->self, "label", ast_node_types[IFSTMT]);
-	Agedge_t *edge;
-	edge = agedge(n->graph, n->self, n->if_stmt->condition->self, NULL, TRUE);
-	agset(edge, "label", "Condition");
-	create_agedge_set(n->if_stmt->condition);
-	for (struct AstNode *i = n->if_stmt->then_stmts->head; i != NULL; i = i->next) {
-
-		edge = agedge(n->graph, n->self, i->self, NULL, TRUE);
-		agset(edge, "label", "True");
-		agset(edge, "color", "green");
-		create_agedge_set(i);
-	}
-	if ( n->if_stmt->else_stmts != NULL ) {
-		for (struct AstNode *i = n->if_stmt->else_stmts->head; i != NULL; i = i->next) {
-
-			edge = agedge(n->graph, n->self, i->self, NULL, TRUE);
-			agset(edge, "label", "False");
-			agset(edge, "color", "red");
-			create_agedge_set(i);
-		}
-	}
-}
-
-void
-create_while_stmt_agedge_set (char *label,
-															int len,
-															struct AstNode *n)
-{
-	Agedge_t *edge;
-	agset(n->self, "label", ast_node_types[WHSTMT]);
-	edge = agedge(n->graph, n->self, n->while_stmt->condition->self, NULL, TRUE);
-	agset(edge, "label", "Condition");
-	create_agedge_set(n->while_stmt->condition);
-	for (struct AstNode *i = n->while_stmt->do_stmts->head; i != NULL; i = i->next) {
-
-		edge = agedge(n->graph, n->self, i->self, NULL, TRUE);
-		agset(edge, "label", "Loop");
-		create_agedge_set(i);
-	}
-}
-
-void
-create_return_stmt_agedge_set (char *label,
-															 int len,
-															 struct AstNode *n)
-{
-	Agedge_t *edge;
-	agset(n->self, "label", ast_node_types[RESTMT]);
-	edge = agedge(n->graph, n->self, n->ret_stmt->ret_val->self, NULL, TRUE);
-	agset(edge, "label", "Return Value");
-	create_agedge_set(n->ret_stmt->ret_val);
-}
-
 /**
  * Note agdelnode only deletes a node from the sub graph
  * and not from the top level graph!
@@ -413,8 +173,8 @@ create_agedge_set (struct AstNode *n)
 	case NUM:
 		create_num_agedge_set(label, len, n);
 		break;
-	case DSGNTR:
-		create_designator_agedge_set(label, len, n);
+	case ARRACC:
+		create_array_access_agedge_set(label, len, n);
 		break;
   case VARDECL:
 		create_var_decl_agedge_set(label, len, n);
@@ -451,6 +211,57 @@ create_agedge_set (struct AstNode *n)
 	free(label);
 }
 
+int
+interpret_ast_node (struct AstNode *n,
+										struct InterpreterCtx *ictx)// mutated
+{
+	if ( n == NULL ) {
+		return 0x7FFFFFFF;
+	}
+
+	switch (n->type) {
+	case IDNT:
+		return interpret_identifier(n, ictx);
+	case NUM:
+		return interpret_number(n, ictx);
+	case ARRACC:
+		return interpret_array_access(n, ictx);
+	case VARDECL:
+		return interpret_var_decl(n, ictx);
+	case FUNCDECL:
+		return interpret_func_decl(n, ictx);
+	case CMPTN:
+		return interpret_computation(n, ictx);
+	case BINOP:
+		return interpret_bin_op(n, ictx);
+	case ASSMT:
+		return interpret_assignment(n, ictx);
+	case FUNCCALL:
+		return interpret_func_call(n, ictx);
+	case IFSTMT:
+		return interpret_if_stmt(n, ictx);
+	case WHSTMT:
+		return interpret_while_stmt(n, ictx);
+	case RESTMT:
+		return interpret_return_stmt(n, ictx);
+	default:
+		perror("(interpret_ast_node): Unknown ast node type");
+		exit(1);
+		return 0x7FFFFFFF;
+	}
+}
+
+int
+interpret_ast (struct Ast *ast)
+{
+	struct InterpreterCtx *ictx = new_interpreter_ctx();
+	int rv = interpret_ast_node(ast->root, ictx);
+	printf("Program exited with code %i\n", rv);
+	free_interpreter_ctx(&ictx);
+
+	return rv;
+}
+
 void
 free_ast_node (struct AstNode *node)
 {
@@ -462,10 +273,10 @@ free_ast_node (struct AstNode *node)
 	case NUM:
 		free(node->number);
 		break;
-	case DSGNTR:
-		free_ast_node(node->designator->ident);
-		free_ast_node_list(node->designator->indices);
-		free(node->designator);
+	case ARRACC:
+		free_ast_node(node->arr_acc->ident);
+		free_ast_node_list(node->arr_acc->indices);
+		free(node->arr_acc);
 		break;
   case VARDECL:
 		free_ast_node(node->var_decl->ident);
@@ -531,7 +342,7 @@ free_ast_node_list (struct AstNodeList *anl)
 	struct AstNode *prv;
   while ( cur != NULL ) {
 		prv = cur;
-		cur=cur->next;
+		cur = cur->next;
 		free_ast_node(prv);
 	}
 }

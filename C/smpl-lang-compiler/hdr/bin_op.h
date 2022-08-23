@@ -2,6 +2,7 @@
 #define _BIN_OP_H_
 
 #include "../hdr/ast.h"
+#include "../hdr/interpreter_ctx.h"
 
 struct BinOp {
 	struct AstNode *opa;
@@ -14,5 +15,14 @@ new_bin_op ();
 
 struct BinOp *
 deep_copy_bin_op (struct BinOp *src);
+
+void
+create_bin_op_agedge_set (char *label,
+													int len,
+													struct AstNode *n);
+
+int
+interpret_bin_op (struct AstNode *n,
+									struct InterpreterCtx *ictx);
 
 #endif//_BIN_OP_H_

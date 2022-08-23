@@ -2,6 +2,9 @@
 #define _COMPUTATION_H_
 
 #include "../hdr/ast.h"
+#include "../hdr/interpreter_ctx.h"
+
+struct AstNode;
 
 struct Computation {
 	struct AstNodeList *var_decls;
@@ -12,10 +15,16 @@ struct Computation {
 struct Computation *
 new_computation ();
 
-/* struct AstNodeList * */
-/* computation_edge_set (struct Computation *c); */
-
 struct Computation *
 deep_copy_computation (struct Computation *src);
+
+void
+create_computation_agedge_set (char *label,
+															 int len,
+															 struct AstNode *n);
+
+int
+interpret_computation (struct AstNode *n,
+											 struct InterpreterCtx *ictx);
 
 #endif//_COMPUTATION_H_

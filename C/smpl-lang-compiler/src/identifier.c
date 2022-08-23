@@ -18,3 +18,31 @@ deep_copy_ident (struct Ident *src)
 	}
 	return dst;
 }
+
+void
+create_ident_agedge_set (char *label,
+												 int len,
+												 struct AstNode *n)
+{
+	snprintf(label, len, "%s", n->identifier->name);
+	agset(n->self, "label", label);
+}
+
+int
+interpret_identifier (struct AstNode *n,
+											struct InterpreterCtx *ictx)
+{
+	int val;
+	char *name = n->identifier->name;
+	struct StrHashEntry *var = sht_lookup(ictx->locals, name);
+	if ( var == NULL ) {
+		throw_interpreter_error("Access to undeclared var: ", name);
+	}
+	val = var->data[0];
+	if ( val == 0x7FFFFFFF ) {
+		throw_interpreter_warning("Acces to uninitialized var: ",
+															name);
+		val = 0;
+	}
+	return val;
+}

@@ -16,3 +16,19 @@ deep_copy_number (struct Number *src)
 	
 	return dst;
 }
+
+void
+create_num_agedge_set (char *label,
+											 int len,
+											 struct AstNode *n)
+{
+	snprintf(label, len, "%i", n->number->val);
+	agset(n->self, "label", label);
+}
+
+int
+interpret_number (struct AstNode *n,
+									struct InterpreterCtx *ictx)
+{
+	return n->number->val;
+}

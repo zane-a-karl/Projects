@@ -21,8 +21,11 @@ main (int argc,
 	Agraph_t *tlg = agopen("Top Level Graph", Agdirected, NULL);
 	// Allocates heap memory for ast
 	struct Ast *ast = parse(psr, tlg);
-	gen_dot_graph(ast, stdout);
+	//	gen_dot_graph(ast, stdout);
 	//	agwrite(tlg, stdout);
+
+	int rv = interpret_ast(ast);
+	printf("reulst = %d\n", rv);
 
 	// Free heap memory
 	free_parser(&psr);

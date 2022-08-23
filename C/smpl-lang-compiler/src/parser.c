@@ -4,18 +4,18 @@ int node_ctr = 0;
 
 // Tkns that signal a stmt beginning
 const enum TokenType stmt_initials[] = {LET,
-																				 CALL,
-																				 IF,
-																				 WHILE,
-																				 RETURN};
+																				CALL,
+																				IF,
+																				WHILE,
+																				RETURN};
 const int num_stmt_initials =
 	sizeof(stmt_initials)/sizeof(enum TokenType);
 
 // Tkns that signal an factor starting
 const enum TokenType fctr_initials[] = {IDENT,
-																				 NUMBER,
-																				 LPAREN,
-																				 CALL};
+																				NUMBER,
+																				LPAREN,
+																				CALL};
 const int num_fctr_initials =
 	sizeof(fctr_initials)/sizeof(enum TokenType);
 
@@ -390,21 +390,23 @@ struct AstNode *
 smpl_designator (struct Parser *p,
 								 Agraph_t      *g)
 {
-	struct AstNode *node = new_ast_node(g, node_ctr++, DSGNTR);
-	// d->indices calloc'd here
-	node->designator = new_designator();
-	node->designator->ident = smpl_ident(p, g, DESIGNATOR);
+	struct AstNode *node = smpl_ident(p, g, DESIGNATOR);
+	struct AstNode *tmp;
+	bool flag = true;
 	while ( peek_tkn(LBRACKET, p) ) {
 
 		consume_tkn(LBRACKET, p, DESIGNATOR);
-		push_ast_node(node->designator->indices,
+		if ( flag ) {
+			tmp = node;
+			node = new_ast_node(g, node_ctr++, ARRACC);
+			node->arr_acc = new_array_access();
+			node->arr_acc->ident = tmp;
+			flag = false;
+		}
+		push_ast_node(node->arr_acc->indices,
 									smpl_expression(p, g));
 		consume_tkn(RBRACKET, p, DESIGNATOR);
 	}
-	/* if (node->designator->indices->head == NULL) { */
-	/* 	free(node->designator->indices); */
-	/* } */
-
 	return node;
 }
 
@@ -472,6 +474,8 @@ smpl_factor (struct Parser *p,
 		consume_tkn(RPAREN, p, FACTOR);
 	} else if ( peek_tkn(CALL, p) ) {
 		node = smpl_func_call(p, g);
+	} else if ( peek_tkn(SEMICOLON, p) ) {
+		//empty expression
 	} else {
 		throw_parser_error(p->curr_tkn->tkn->type, p, FACTOR);
 	}

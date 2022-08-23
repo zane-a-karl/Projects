@@ -2,6 +2,7 @@
 #define _IF_STMT_H_
 
 #include "../hdr/ast.h"
+#include "../hdr/interpreter_ctx.h"
 
 struct IfStmt {
 	struct AstNode     *condition;
@@ -14,5 +15,14 @@ new_if_stmt ();
 
 struct IfStmt *
 deep_copy_if_stmt (struct IfStmt *src);
+
+void
+create_if_stmt_agedge_set (char *label,
+													 int len,
+													 struct AstNode *n);
+
+int
+interpret_if_stmt (struct AstNode *n,
+									 struct InterpreterCtx *ictx);
 
 #endif//_IF_STMT_H_

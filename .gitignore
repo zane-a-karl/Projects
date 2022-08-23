@@ -16,3 +16,4 @@
 **/Solidity/build
 **/Solidity/migrations
 **/Solidity/test
+*/bin/main

@@ -2,6 +2,7 @@
 #define _VAR_DECL_H_
 
 #include "../hdr/ast.h"
+#include "../hdr/interpreter_ctx.h"
 
 #include <stdlib.h>
 
@@ -15,5 +16,14 @@ new_vd ();
 
 struct VarDecl *
 deep_copy_var_decl (struct VarDecl *src);
+
+void
+create_var_decl_agedge_set (char *label,
+														int len,
+														struct AstNode *n);
+
+int
+interpret_var_decl (struct AstNode *n,
+										struct InterpreterCtx *ictx);
 
 #endif//_VAR_DECL_H_

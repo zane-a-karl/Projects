@@ -27,4 +27,8 @@ int
 interpret_computation (struct AstNode *n,
 											 struct InterpreterCtx *ictx);
 
+void
+compile_computation (struct AstNode *n,
+										 struct CompilerCtx *cctx);
+
 #endif//_COMPUTATION_H_

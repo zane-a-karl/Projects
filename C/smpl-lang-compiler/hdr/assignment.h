@@ -24,4 +24,8 @@ int
 interpret_assignment (struct AstNode *n,
 											struct InterpreterCtx *ictx);
 
+struct Operand *
+compile_assignment (struct AstNode *n,
+										struct CompilerCtx *cctx);
+
 #endif//_ASSIGNMENT_H_

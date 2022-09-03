@@ -23,4 +23,8 @@ int
 interpret_return_stmt (struct AstNode *n,
 											 struct InterpreterCtx *ictx);
 
+struct Operand *
+compile_return_stmt (struct AstNode *n,
+										 struct CompilerCtx *cctx);
+
 #endif//_RETURN_STMT_H_

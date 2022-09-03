@@ -47,8 +47,7 @@ interpret_var_decl (struct AstNode *n,
 	int data_len, dim, arrdims_len = 0, j = 0;
 	struct AstNode *i;
 	//'name' freed during interpreter_ctx free
-	char *name =
-		deep_copy_str(n->var_decl->ident->identifier->name);
+	char *name = deep_copy_str(n->var_decl->ident->identifier->name);
 	//Check if it's a new variable
 	if ( sht_lookup(ictx->locals, name) != NULL ) {
 		throw_interpreter_error("Re-declaration of var: ", name);
@@ -87,4 +86,39 @@ interpret_var_decl (struct AstNode *n,
 	}
 	//Use MAX of 'int' for NULL
 	return 0x7FFFFFFF;
+}
+
+void
+compile_var_decl (struct AstNode *n,
+									struct CompilerCtx *cctx)
+{
+	char *name = deep_copy_str(n->var_decl->ident->identifier->name);
+	int dims_len = 0;
+	int allocation_size = 1;
+
+	//Get the number of dimsensions
+	struct AstNode *i = n->var_decl->dims->head;
+	for (; i != NULL; i = i->next) {
+		dims_len++;
+	}
+	int *dims = calloc(dims_len, sizeof(int));
+
+	//Store the values of the dimensions
+	i = n->var_decl->dims->head;
+	for (int j = 0; i != NULL, j < dims_len; i = i->next, ++j) {
+		dims[j] = i->number->val;
+		allocation_size *= dims[j];
+	}
+
+	//Create a BB instruction to declare the var
+	declare_local(cctx->cur_block, name, dims);
+
+	//Create a BB 'alloca' instruction to give the arr more space
+	struct Operand *base_addr;
+	if ( dims_len != 0 ) {
+		struct Operand *tmp = new_operand(IMMEDIATE);
+		tmp->val = allocation_size;
+		base_addr = compiler_ctx_emit(cctx, name, true);
+		set_local_op(cctx->cur_block, name, base_addr);
+	}
 }

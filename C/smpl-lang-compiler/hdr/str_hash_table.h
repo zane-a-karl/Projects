@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-enum StrHashEntryType {DATA, NODE};
+enum StrHashEntryType {DATA, NODE, OP, INST, BB};
 
 struct StrHashEntry {
 	char                 *name;
@@ -16,6 +16,9 @@ struct StrHashEntry {
 	union {
 		int                *data;
 		struct AstNode     *node;
+		struct Operand     *operand;
+		struct Instruction *instruction;
+		struct BasicBlock  *basic_block;
 	};
 	int                   data_len;
 	struct StrHashEntry  *next;

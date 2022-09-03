@@ -12,7 +12,7 @@ new_func_call ()
 	struct FuncCall *fc = calloc(1, sizeof(struct FuncCall));
 	fc->ident           = NULL;
 	fc->args            = new_ast_node_list();
-	
+
 	return fc;
 }
 
@@ -61,11 +61,11 @@ interpret_builtin_function (char                  *name,
 														struct InterpreterCtx *ictx)
 {
 	if ( strncmp(name, "inputNum", MAX_FN_NAME_LEN) == 0 ) {
-		
+
 		int input = 0;
 		printf("Please input a number: ");
 		scanf("%d", &input);
-		printf("\n");		
+		printf("\n");
 		return input;
 	} else if (strncmp(name, "outputNum", MAX_FN_NAME_LEN)==0) {
 		printf("%d\n", args[0]);
@@ -92,18 +92,18 @@ interpret_func_call (struct AstNode *n,
 	for (i = n->func_call->args->head; i != NULL; i = i->next) {
 			args_len++;
 	}
-	
+
 	//Interpret and store the args (ALL ARE `INT`s!)
 	int *args = calloc(args_len, sizeof(int));
 	for (i = n->func_call->args->head; i != NULL; i = i->next) {
 		args[k++] = interpret_ast_node(i, ictx);
 	}
-	
+
 	//Check if `fn_name` refers to a built-in function
 	if ( is_builtin_function(fn_name) ) {
 		return interpret_builtin_function(fn_name, args, ictx);
 	}
-	
+
 	//Check if function was defined
 	struct StrHashEntry *tmp = sht_lookup(ictx->funcs, fn_name);
 	if ( tmp == NULL ) {
@@ -148,6 +148,22 @@ interpret_func_call (struct AstNode *n,
 		}
 	}
 	free_interpreter_ctx(&fnctx);
-	
+
 	return rv;
+}
+
+struct Operand *
+compile_func_call (struct AstNode *n,
+									 struct CompilerCtx *cctx)
+{
+	struct OperandList *arg_ops = new_operand_list();
+	struct Operand *fn_op;
+	struct AstNode *i = n->func_call->args->head;
+	for (; i != NULL; i = i->next) {
+		push_operand(arg_ops, compile_ast_node(i, cctx));
+	}
+	fn_op = new_operand(FUNCTION);
+	fn_op->function->name = n->func_call->ident-identifier->name;
+
+	return compiler_ctx_emit(cctx, "emit", fn_op, arg_ops, false);
 }

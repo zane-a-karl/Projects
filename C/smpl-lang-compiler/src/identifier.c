@@ -46,3 +46,12 @@ interpret_identifier (struct AstNode *n,
 	}
 	return val;
 }
+
+struct Operand *
+compile_identifier (struct AstNode *n,
+										struct CompilerCtx *cctx)
+{
+	struct SomeOpContainer *tmp;
+	tmp = get_local(cctx->cur_block, n->identifier->name);
+	return tmp->val_op;
+}

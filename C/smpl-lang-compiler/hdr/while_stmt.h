@@ -24,4 +24,8 @@ int
 interpret_while_stmt (struct AstNode *n,
 											struct InterpreterCtx *ictx);
 
+struct Operand *
+compile_while_stmt (struct AstNode *n,
+										struct CompilerCtx *cctx);
+
 #endif//_WHILE_STMT_H_

@@ -26,4 +26,8 @@ int
 interpret_var_decl (struct AstNode *n,
 										struct InterpreterCtx *ictx);
 
+void
+compile_var_decl (struct AstNode *n,
+									struct CompilerCtx *cctx);
+
 #endif//_VAR_DECL_H_

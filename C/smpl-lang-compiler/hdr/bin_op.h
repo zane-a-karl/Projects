@@ -17,12 +17,21 @@ struct BinOp *
 deep_copy_bin_op (struct BinOp *src);
 
 void
-create_bin_op_agedge_set (char *label,
-													int len,
+create_bin_op_agedge_set (char           *label,
+													int             len,
 													struct AstNode *n);
 
 int
-interpret_bin_op (struct AstNode *n,
+interpret_bin_op (struct AstNode        *n,
 									struct InterpreterCtx *ictx);
+
+struct Operand *
+compile_bin_op (struct AstNode     *n,
+								struct CompilerCtx *cctx);
+
+struct Operand *
+compile_conditional_jump (struct AstNode     *n,
+													struct CompilerCtx *cctx,
+													struct BasicBlock  *bb);
 
 #endif//_BIN_OP_H_

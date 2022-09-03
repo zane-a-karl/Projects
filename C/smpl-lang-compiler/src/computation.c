@@ -32,7 +32,9 @@ create_computation_agedge_set (char *label,
 {
 	agset(n->self, "label", ast_node_types[CMPTN]);
 	Agedge_t *edge;
-	for (struct AstNode *i = n->computation->var_decls->head; i != NULL; i = i->next) {
+	struct AstNode *i;
+	i = n->computation->var_decls->head;
+	for (; i != NULL; i = i->next) {
 
 		snprintf(label, len, "%s", ast_node_types[VARDECL]);
 		edge = agedge(n->graph, n->self, i->self, NULL, TRUE);
@@ -41,7 +43,8 @@ create_computation_agedge_set (char *label,
 		create_agedge_set(i);
 	}
 	memset(label, '\0', len*sizeof(char));
-	for (struct AstNode *i = n->computation->func_decls->head; i != NULL; i = i->next) {
+	i = n->computation->func_decls->head;
+	for (; i != NULL; i = i->next) {
 
 		snprintf(label, len, "%s", ast_node_types[FUNCDECL]);
 		edge = agedge(n->graph, n->self, i->self, NULL, TRUE);
@@ -50,7 +53,8 @@ create_computation_agedge_set (char *label,
 		create_agedge_set(i);
 	}
 	memset(label, '\0', len*sizeof(char));
-	for (struct AstNode *i = n->computation->stmts->head; i != NULL; i = i->next) {
+	i = n->computation->stmts->head;
+	for (; i != NULL; i = i->next) {
 
 		snprintf(label, len, "%s", "Statement");
 		edge = agedge(n->graph, n->self, i->self, NULL, TRUE);
@@ -65,13 +69,16 @@ interpret_computation (struct AstNode *n,
 {
 	struct AstNode *i;
 	int rv = 0;
-	for (i=n->computation->var_decls->head; i!=NULL; i=i->next) {
+	i = n->computation->var_decls->head;
+	for (; i != NULL; i = i->next) {
 		rv = interpret_ast_node(i, ictx);
 	}
-	for (i=n->computation->func_decls->head;i!=NULL;i=i->next) {
+	i = n->computation->func_decls->head;
+	for (; i != NULL; i = i->next) {
 		rv = interpret_ast_node(i, ictx);
 	}
-	for (i=n->computation->stmts->head; i!=NULL; i=i->next) {
+	i = n->computation->stmts->head;
+	for (; i != NULL; i = i->next) {
 
 		rv = interpret_ast_node(i, ictx);
 		if ( rv != 0x7FFFFFFF ) {
@@ -79,4 +86,32 @@ interpret_computation (struct AstNode *n,
 		}
 	}
 	return rv;
+}
+
+void
+compile_computation (struct AstNode *n,
+										 struct CompilerCtx *cctx)
+{
+	struct BasicBlock *root_block = new_basic_block(cctx);
+	struct BlockGroup *main_fn    = new_block_group("main");
+	main_fn->is_main              = true;
+	main_fn->entry                = root_block;
+	root_block->function          = main_fn;
+	cctx->cur_block               = root_block;
+	push_basic_block(cctx->roots, root_block, ROOTS);
+	struct AstNode *i;
+	i = n->computation->var_decls->head;
+	for (; i != NULL; i = i->next) {
+		compile_ast_node(i, cctx);
+	}
+	i = n->computation->func_decls->head;
+	for (; i != NULL; i = i->next) {
+		compile_ast_node(i, cctx);
+	}
+	i = n->computation->stmts->head;
+	for (; i != NULL; i = i->next) {
+		compile_ast_node(i, cctx);
+	}
+	main_fn->exit = cctx->cur_block;
+	compiler_ctx_emit(cctx, "end", false);//TODO!!!!
 }

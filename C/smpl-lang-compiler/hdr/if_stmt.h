@@ -25,4 +25,8 @@ int
 interpret_if_stmt (struct AstNode *n,
 									 struct InterpreterCtx *ictx);
 
+struct Operand *
+compile_if_stmt (struct AstNode *n,
+								 struct CompilerCtx *cctx);
+
 #endif//_IF_STMT_H_

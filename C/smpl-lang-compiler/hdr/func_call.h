@@ -32,4 +32,8 @@ int
 interpret_func_call (struct AstNode *n,
 										 struct InterpreterCtx *ictx);
 
+struct Operand *
+compile_func_call (struct AstNode *n,
+									 struct CompilerCtx *cctx);
+
 #endif//_FUNC_CALL_H_

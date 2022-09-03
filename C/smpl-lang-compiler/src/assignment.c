@@ -95,3 +95,30 @@ interpret_assignment (struct AstNode *n,
 
 	return 0x7FFFFFFF;
 }
+
+struct Operand *
+compile_assignment (struct AstNode *n,
+										struct CompilerCtx *cctx)
+{
+	struct Operand *rhs_op = compile_ast_node(n->assignment->rhs);
+	char *name;
+	struct StrHashEntry *array;
+	struct Operand *addr_op;
+	if ( n->assignment->lhs->type == IDNT ) {
+		
+		name = n->assignment->lhs->identifier->name;
+		set_local_op(cctx->cur_block, name, rhs_op);
+	} else if ( n->assignment->lhs->type == ARRACC ) {
+		
+		name = n->assignment->lhs->arr_acc->ident->identifier->name;
+		array = sht_lookup(cctx->cur_block->locals_op, name);
+		if ( array == NULL ) {
+			throw_compiler_error("Assignment to undeclared array: ", name);
+		}
+		addr_op = compile_addr(n->assignment->lhs, cctx);
+		compile_ctx_emit(cctx, "store", rhs_op, addr_op, false);
+	} else {
+		throw_compile_error("Unknown var decl type: ", name);
+	}
+	return NULL;
+}

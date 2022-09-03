@@ -21,15 +21,26 @@ main (int argc,
 	Agraph_t *tlg = agopen("Top Level Graph", Agdirected, NULL);
 	// Allocates heap memory for ast
 	struct Ast *ast = parse(psr, tlg);
+
+	//GENERATE THE GRAPHVIZ OF THE AST
 	//	gen_dot_graph(ast, stdout);
 	//	agwrite(tlg, stdout);
 
-	int rv = interpret_ast(ast);
-	printf("reulst = %d\n", rv);
+	//INTERPRET THE SMPL PROPGRAM AND OUTPUT THE RESULTS
+	//	int rv = interpret_ast(ast);
+	//	printf("result = %d\n", rv);
+
+	//GENERATE THE IR AND
+	//GENERATE THE GRAPHVIZ OF THE IR
+	bool cse_bool = false;
+	struct CompilerCtx *ir = compile(ast, cse_bool);
+	
 
 	// Free heap memory
 	free_parser(&psr);
 	free_ast(&ast);
+	//TODO
+	//	free_ir(&ir);
 
 	return 0;
 }

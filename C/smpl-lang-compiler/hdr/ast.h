@@ -40,7 +40,7 @@ struct AstNode {
 	Agnode_t             *self;
 	int                   node_number;
 	struct AstNode       *next;//ONLY MEANINGFUL IF PART OF ANL
-	enum AstNodeType     type;
+	enum AstNodeType      type;
 	union {
 		struct Computation *computation;
 		struct VarDecl     *var_decl;
@@ -100,6 +100,10 @@ interpret_ast_node (struct AstNode *n,
 
 int
 interpret_ast (struct Ast *ast);
+
+void
+compile_ast_node (struct AstNode *n,
+									struct CompilerCtx *cctx);
 
 void
 free_ast_node (struct AstNode *node);

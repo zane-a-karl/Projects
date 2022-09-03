@@ -32,3 +32,13 @@ interpret_number (struct AstNode *n,
 {
 	return n->number->val;
 }
+
+struct Operand *
+compile_number (struct AstNode *n,
+								struct CompilerCtx *cctx)
+
+{
+	struct Operand *op = new_operand(IMMEDIATE);
+	op->immediate->val = n->number->val;
+	return op;
+}

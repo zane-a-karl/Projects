@@ -112,9 +112,7 @@ struct AstNodeList *
 deep_copy_ast_node_list (struct AstNodeList *src)
 {
 	struct AstNodeList *dst = new_ast_node_list();
-	for (struct AstNode *i = src->head;
-			 i != NULL;
-			 i = i->next) {
+	for (struct AstNode *i = src->head; i != NULL; i = i->next) {
 		push_ast_node(dst, deep_copy_ast_node(i));
 	}
 	return dst;
@@ -137,7 +135,7 @@ push_ast_node (struct AstNodeList *anl,
 }
 
 /**
- * `new` will not be NULL, and will have at least one node.
+ * `new_list` will not be NULL, and will have at least one node.
  */
 void
 concat_ast_list (struct AstNodeList *anl,
@@ -260,6 +258,46 @@ interpret_ast (struct Ast *ast)
 	free_interpreter_ctx(&ictx);
 
 	return rv;
+}
+
+void
+compile_ast_node (struct AstNode *n,
+									struct CompilerCtx *cctx)
+{
+	if ( n == NULL ) {
+		return;
+	}
+
+	switch (n->type) {
+	case IDNT:
+		return compile_identifier(n, cctx);
+	case NUM:
+		return compile_number(n, cctx);
+	case ARRACC:
+		return compile_array_access(n, cctx);
+	case VARDECL:
+		return compile_var_decl(n, cctx);
+	case FUNCDECL:
+		return compile_func_decl(n, cctx);
+	case CMPTN:
+		return compile_computation(n, cctx);
+	case BINOP:
+		return compile_bin_op(n, cctx);
+	case ASSMT:
+		return compile_assignment(n, cctx);
+	case FUNCCALL:
+		return compile_func_call(n, cctx);
+	case IFSTMT:
+		return compile_if_stmt(n, cctx);
+	case WHSTMT:
+		return compile_while_stmt(n, cctx);
+	case RESTMT:
+		return compile_return_stmt(n, cctx);
+	default:
+		perror("(compile_ast_node): Unknown ast node type");
+		exit(1);
+		return;
+	}
 }
 
 void

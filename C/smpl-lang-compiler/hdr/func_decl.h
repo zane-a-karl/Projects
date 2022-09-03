@@ -42,4 +42,8 @@ int
 interpret_func_decl (struct AstNode *n,
 										 struct InterpreterCtx *ictx);
 
+int
+compile_func_decl (struct AstNode *n,
+									 struct CompilerCtx *cctx);
+
 #endif//_FUNC_DECL_H_

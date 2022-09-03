@@ -73,3 +73,63 @@ interpret_bin_op (struct AstNode *n,
 	}
 	return rv;
 }
+
+struct Operand *
+compile_bin_op (struct AstNode *n,
+								struct CompilerCtx *cctx)
+{
+	struct Operand *a_op = compile_ast_node(n->bin_op->opa, cctx);
+	struct Operand *b_op = compile_ast_node(n->bin_op->opb, cctx);
+	char *op = n->bin_op->op;
+	if ( strncmp(op, "+", 3) == 0 ) {
+		return compiler_ctx_emit(cctx, "add", a_op, b_op, true);
+	} else if ( strncmp(op, "-", 3) == 0 ) {
+		return compiler_ctx_emit(cctx, "sub", a_op, b_op, true);
+	} else if ( strncmp(op, "*", 3) == 0 ) {
+		return compiler_ctx_emit(cctx, "mul", a_op, b_op, true);
+	} else if ( strncmp(op, "/", 3) == 0 ) {
+		return compiler_ctx_emit(cctx, "div", a_op, b_op, true);
+	} else if ( strncmp(op, "<",  3) == 0 ||
+							strncmp(op, "<=", 3) == 0 ||
+							strncmp(op, ">",  3) == 0 ||
+							strncmp(op, ">=", 3) == 0 ||
+							strncmp(op, "==", 3) == 0 ||
+							strncmp(op, "!=", 3) == 0 ) {
+		return compiler_ctx_emit(cctx, "cmp", a_op, b_op, true);
+	} else {
+		throw_compiler_error("Unrecognized binary op: ", op);
+		return NULL;
+	}
+}
+
+/**
+ * Compiles a conditional jump executed on the condition node `n`
+ * for the OPPOSITE of that condition. I.e. the jump is only
+ * performed if the condition is FALSE, otherwise it falls through.
+ */
+struct Operand *
+compile_conditional_jump (struct AstNode     *n,
+													struct CompilerCtx *cctx,
+													struct BasicBlock  *bb)
+{
+	struct Operand *cond_op  = compile_ast_node(n, cctx);
+	struct Operand *label_op = new_operand(LABEL);
+	label_op->label->name = bb->label;
+	char *op = n->bin_op->op;
+	if ( strncmp(op, ">=", 3) == 0 ) {
+		compiler_ctx_emit(cctx, "blt", cond_op, label_op, false);
+	} else if ( strncmp(op, ">", 3) == 0 ) {
+		compiler_ctx_emit(cctx, "ble", cond_op, label_op, false);
+	} else if ( strncmp(op, "<=", 3) == 0 ) {
+		compiler_ctx_emit(cctx, "bgt", cond_op, label_op, false);
+	} else if ( strncmp(op, "<", 3) == 0 ) {
+		compiler_ctx_emit(cctx, "bge", cond_op, label_op, false);
+	} else if ( strncmp(op, "!=",  3) == 0 ) {
+		compiler_ctx_emit(cctx, "beq", cond_op, label_op, false);
+	} else if ( strncmp(op, "==",  3) == 0 ) {
+		compiler_ctx_emit(cctx, "bne", cond_op, label_op, false);
+	} else {
+		throw_compiler_error("Unrecognized binary op: ", op);
+	}
+	return NULL;
+}

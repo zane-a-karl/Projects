@@ -75,3 +75,69 @@ interpret_if_stmt (struct AstNode *n,
 	}
 	return rv;
 }
+
+struct Operand *
+compile_if_stmt (struct AstNode *n,
+								 struct CompilerCtx *cctx)
+{
+	struct BasicBlock *then_block = new_basic_block(cctx);
+	copy_block_ctx_params(then_block, cctx->cur_block);
+	struct BasicBlock *else_block = new_basic_block(cctx);
+	copy_block_ctx_params(else_block, cctx->cur_block);
+	struct BasicBlock *join_block = new_basic_block(cctx);
+	copy_block_ctx_params(join_block, cctx->cur_block);
+
+	add_successor(cctx->cur_block, then_block);
+	add_successor(cctx->cur_block, else_block);
+
+	push_basic_block(cctx->cur_block->dominatees, then_block, DOMEES);
+	push_basic_block(cctx->cur_block->dominatees, else_block, DOMEES);
+	push_basic_block(cctx->cur_block->dominatees, join_block, DOMEES);
+
+	compile_conditional_jump(n->if_stmt->condition, cctx, else_block);
+
+	cctx->cur_block = then_block;
+	struct Operand *label_op = new_operand(LABEL);
+	struct AstNode *i = n->if_stmt->then_stmts->head;
+	for (; i != NULL; i = i->next) {
+		compile_ast_node(i, cctx);
+	}
+	label_op->label->name = join_block->label;
+	compile_ctx_emit(cctx, "bra", label_op, false);
+	add_successor(cctx->cur_block, join_block);
+	then_block = cctx->cur_block;
+
+	cctx->cur_block = else_block;
+	if (n->if_stmt->else_stmts != NULL ) {
+		i = n->if_stmt->else_stmts->head;
+		for (; i != NULL; i = i->next) {
+			compile_ast_node(i, cctx);
+		}
+	}
+	add_successor(cctx->cur_block, join_block);
+	else_block = cctx->cur_block;
+
+	cctx->cur_block = join_block;
+	struct SomeOpContainer *a, *b;
+	struct Operand *phi_op;
+	struct Operand *then_op = new_operand(LABEL);
+	struct Operand *else_op = new_operand(LABEL);
+	struct StrHashEntry *j;
+	for (int k = 0; k < MAX_NUM_VARS; ++k) {
+		j = cctx->cur_block->locals_op->entries[k];
+		for (; j != NULL; j = j->next) {
+			a = get_local(then_block, j->name);
+			b = get_local(else_block, j->name);
+			if ( a->val_op == b->val_op) {
+				continue;
+			}
+			then_op->label->name = then_block->label;
+			else_op->label->name = else_block->label;
+			phi_op = compiler_ctx_emit(cctx, "phi",
+																 then_op, a->val_op,
+																 else_op, b->val_op);
+			set_local_op(cctx->cur_block, j->name, phi_op);
+		}
+	}
+	return NULL;
+}

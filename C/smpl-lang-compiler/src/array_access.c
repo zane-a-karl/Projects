@@ -89,3 +89,52 @@ interpret_array_access (struct AstNode *n,
 	}
 	return rv;
 }
+
+struct Operand *
+compile_array_access (struct AstNode *n,
+											struct CompilerCtx *cctx)
+{
+	struct Operand *addr_op = compile_addr(n, cctx);
+	struct Operand *load_op;
+	load_op = compiler_ctx_emit(cctx, "load", addr_op, true);
+	return load_op;
+}
+
+struct Operand *
+compile_addr (struct AstNode *n,
+							struct CompilerCtx *cctx)
+{
+	char *name = n->arr_acc->ident->identifier->name;
+	struct SomeOpContainer *base_addr;
+	struct Operand *addr_op;
+	struct Operand *base_addr_op;
+	int *dims;
+	base_addr    = get_local(cctx->cur_block, name);
+	base_addr_op = base_addr->val_op;
+	dims         = base_addr->dims;
+	struct Operarnd *offset_op = new_operand(IMMEDIATE);
+	offset_op->immediate->val = 0;
+	struct AstNode *i = n->arr_acc->indices->head;
+	int dims_len = 0;
+	for (; i != NULL; i = i->next) {
+		dims_len++;
+	}
+	i = n->arr_acc->indices->head;
+	int j = 0;
+	struct Operand *idx_op, this_offset_op, stride_op, sizeof_int_op;
+	for (; i != NULL && j < dims_len; i = i->next, ++j) {
+		idx_op = compile_ast_node(i, cctx);
+		stride_op = new_operand(IMMEDIATE);
+		for (int k = j+1; k < dims_len; ++k) {
+			stride_op->immediate->val *= dims[k];
+		}
+		this_offset_op = compiler_ctx_emit(cctx, "mul", idx_op, stride_op, true);
+		offset_op = compiler_ctx_emit(cctx, "add", offset_op, this_offset_op, true);
+	}
+	sizeof_int_op = new_operand(IMMEDIATE);
+	sizeof_int_op->immediate->val = 4;//4bytes to an int
+	offset_op = compiler_ctx_emit(cctx, "mul", offset_op, sizeof_int_op, true);
+	addr_op = compiler_ctx_emit(cctx, "adda", base_addr_op, offset_op, false);
+
+	return addr_op;
+}

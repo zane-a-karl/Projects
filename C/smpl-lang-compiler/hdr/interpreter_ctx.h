@@ -10,7 +10,7 @@ struct InterpreterCtx {
 };
 
 struct InterpreterCtx *
-new_interpreter_ctx();
+new_interpreter_ctx ();
 
 void
 throw_interpreter_error (char *err,

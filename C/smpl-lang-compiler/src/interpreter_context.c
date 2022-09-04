@@ -29,8 +29,8 @@ throw_interpreter_error (char *err,
 }
 
 void
-throw_interpreter_warning(char *warn,
-													char *reason)
+throw_interpreter_warning (char *warn,
+													 char *reason)
 {
 	int len = strlen(warn) + strlen(reason) + 1;
 	char *output = calloc(len,

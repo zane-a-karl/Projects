@@ -1,8 +1,8 @@
 #ifndef _INSTRUCTION_H_
 #define _INSTRUCTION_H_
 
-#include "../hdr/operation.h"
-#include "../hdr/str_hash_table.h"//for `deep_copy_str()`
+#include "../hdr/operand.h"
+#include "../hdr/utils.h"//for `deep_copy_str()`
 
 //Necessary Forward Declaration
 struct InstructionList;
@@ -29,6 +29,16 @@ new_instruction_list ();
 void
 push_instruction (struct InstructionList *il,
 									struct Instruction     *new_i);
+
+void
+delete_instruction (struct InstructionList *il,
+										struct Instruction     *instr);
+
+char *
+dominance_class (struct Instruction *instr);
+
+struct Instruction *
+find_dominating_identical (struct Instruction *instr);
 
 void
 free_instruction (struct Instruction **instr);

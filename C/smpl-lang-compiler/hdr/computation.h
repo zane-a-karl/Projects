@@ -3,6 +3,9 @@
 
 #include "../hdr/ast.h"
 #include "../hdr/interpreter_ctx.h"
+#include "../hdr/operand.h"
+#include "../hdr/basic_block.h"
+#include "../hdr/compiler_ctx.h"
 
 struct AstNode;
 
@@ -27,7 +30,7 @@ int
 interpret_computation (struct AstNode *n,
 											 struct InterpreterCtx *ictx);
 
-void
+struct Operand *
 compile_computation (struct AstNode *n,
 										 struct CompilerCtx *cctx);
 

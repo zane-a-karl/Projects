@@ -1,6 +1,14 @@
 #ifndef _COMPILER_CTX_H_
 #define _COMPILER_CTX_H_
 
+#include "../hdr/ast.h"
+#include "../hdr/basic_block.h"
+
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 struct CompilerCtx {
 	int                    instr_ctr;
@@ -23,8 +31,8 @@ throw_compiler_error (char *err,
 											char *reason);
 
 void
-throw_compiler_warning(char *warn,
-											 char *reason);
+throw_compiler_warning (char *warn,
+												char *reason);
 
 struct CompilerCtx *
 compile (struct Ast *ast,

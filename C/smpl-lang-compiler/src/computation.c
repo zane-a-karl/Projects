@@ -88,7 +88,7 @@ interpret_computation (struct AstNode *n,
 	return rv;
 }
 
-void
+struct Operand *
 compile_computation (struct AstNode *n,
 										 struct CompilerCtx *cctx)
 {
@@ -113,5 +113,7 @@ compile_computation (struct AstNode *n,
 		compile_ast_node(i, cctx);
 	}
 	main_fn->exit = cctx->cur_block;
-	compiler_ctx_emit(cctx, "end", false);//TODO!!!!
+	compiler_ctx_emit(cctx, false, 1, "end");
+
+	return NULL;
 }

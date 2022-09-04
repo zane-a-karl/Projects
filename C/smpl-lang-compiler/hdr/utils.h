@@ -7,4 +7,7 @@
 void
 check_fopen (FILE* f);
 
+char *
+deep_copy_str (char *src);
+
 #endif //_UTILS_H_

@@ -8,3 +8,13 @@ check_fopen (FILE* f)
     exit(1);
   }
 }
+
+char *
+deep_copy_str (char *src)
+{
+	char *dst = calloc(MAX_VAR_NAME_LEN, sizeof(char));
+	for (int i = 0; i < MAX_VAR_NAME_LEN; ++i) {
+		dst[i] = src[i];
+	}
+	return dst;
+}

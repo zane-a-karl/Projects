@@ -5,9 +5,10 @@
 #include "../hdr/str_hash_table.h"
 #include "../hdr/str_list.h"
 #include "../hdr/instruction.h"
-#include "../hdr/operation.h"
+#include "../hdr/operand.h"
 #include "../hdr/constants.h"
 
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -23,11 +24,6 @@ enum BasicBlockListType {
 struct BasicBlockList;
 struct BlockGroup;
 
-// I'm pretty sure I need more than one `next` pointer b/c
-// I have lists of blocks that may have some of the same blocks
-// within them. I think I got away with a single next pointer
-// in my previous lists because the list nodes never
-// intersected.
 struct BasicBlock {
 	struct InstructionList *instrs;
 	int                     instrs_len;
@@ -90,11 +86,13 @@ push_to_dominatees (struct BasicBlockList *bbl,
 										struct BasicBlock     *new_bb);
 
 struct Operand *
-basic_block_emit (struct BasicBlock *bb,
-									int                instr_num,
-									char              *name,
-									bool               produces_output,
-									bool               exec_cse);
+vbasic_block_emit (struct BasicBlock *bb,
+									 int                instr_num,
+									 char              *instr_name,
+									 bool               produces_output,
+									 bool               may_eliminate,
+									 int                n_args,
+									 va_list            args);
 
 void
 add_successor (struct BasicBlock *bb,
@@ -123,5 +121,17 @@ rename_op (struct BasicBlock *bb,
 void
 copy_block_ctx_params (struct BasicBlock *dst,
 											 struct BasicBLock *src);
+
+void
+free_block_group (struct BlockGroup **bg);
+
+void
+free_basic_block (struct BasicBlock **bb);
+
+void
+free_successors_basic_block_list (struct BasicBlockList **successors);
+
+void
+free_roots_basic_block_list (struct BasicBlockList **roots);
 
 #endif//_BASIC_BLOCK_H_

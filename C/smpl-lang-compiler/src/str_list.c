@@ -48,4 +48,5 @@ free_str_list (struct StrList **sl)
 		free(prv->data);
 		free(prv);
 	}
+	free(*sl);
 }

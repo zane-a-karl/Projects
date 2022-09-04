@@ -26,7 +26,7 @@ struct ArgumentOp {
 	char *name;
 };
 struct LabelOp {
-	char *label;
+	char *name;
 };
 struct FunctionOp {
 	char *name;
@@ -44,7 +44,7 @@ struct Operand {
 	union {
 		struct ImmediateOp        *immediate;
 		struct UninitializedVarOp *uninit_var;
-		struct InstructionOp      *instr;
+		struct InstructionOp      *instrunction;
 		struct ArgumentOp         *argument;
 		struct LabelOp            *label;
 		struct FunctionOp         *function;
@@ -58,7 +58,8 @@ struct OperandList {
 };
 
 struct Operand *
-new_operand (enum OperandType type);
+new_operand (enum OperandType type,
+						 ...);
 
 struct OperandList *
 new_operand_list ();
@@ -66,6 +67,14 @@ new_operand_list ();
 void
 push_operand (struct OperandList *ol,
 							struct Operand     *new_op);
+
+bool
+eq_operands (struct Operand *op1,
+						 struct Operand *op2);
+
+bool
+eq_operand_lists (struct OperandList *l1,
+									struct OperandList *l2);
 
 void
 free_operand (struct Operand **op);

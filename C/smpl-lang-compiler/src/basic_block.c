@@ -7,17 +7,17 @@ new_basic_block (struct CompilerCtx *cctx)
 	cctx->block_ctr++;
 
 	struct BasicBlock *bb = calloc(1, sizeof(BasicBlock));
-	bb->instrs            = NULL;
+	bb->instrs            = new_instruction_list();
 	bb->label             = calloc(MAX_VAR_NAME_LEN, sizeof(char));
 	snprintf(bb->label, MAX_VAR_NAME_LEN, "BB%i", cctx->block_ctr);
-	bb->successors        = NULL;
+	bb->successors        = new_basic_block_list();
 	bb->next_s            = NULL;
-	bb->predecessors      = NULL;
+	bb->predecessors      = new_basic_block_list();
 	bb->next_p            = NULL;
 	bb->locals_op         = NULL;
 	bb->locals_dim        = NULL;
 	bb->function          = NULL;
-	bb->dominatees        = NULL;
+	bb->dominatees        = new_basic_block_list();
 	bb->next_d            = NULL;
 	bb->dom_instr_tree    = NULL;
 	bb->next_r            = NULL;
@@ -143,51 +143,69 @@ push_to_dominatees (struct BasicBlockList *bbl,
 	}
 }
 
-
 /**
- *TODO I think this fn needs to be variadic :/
+ *Takes the compiler_ctx_emit or basic_block_emit fns' `va_list`
  */
 struct Operand *
-basic_block_emit (struct BasicBlock *bb,
-									int                instr_num,
-									char              *name,
-									bool               produces_output,
-									bool               exec_cse)
+vbasic_block_emit (struct BasicBlock *bb,
+									 int                instr_num,
+									 char              *instr_name,
+									 bool               produces_output,
+									 bool               exec_cse,
+									 int                n_args,
+									 va_list            args)
 {
-	struct Operand *rv;
 	struct Instruction *instr;
-	instr = new_instruction(instr_name, produces_output);
-	char *dominance_class_name = dominance_class(instr);
-	struct StrHashEntry *dom_class = sht_lookup(bb->dom_instr_tree,
-																							dominance_class_name);
-	if ( dom_class != NULL ) {
-		instr->dominator = dom_class->instruction;
+	instr = new_instruction(instr_name, produces_output, n_args, args);
+
+	char *dom_class_name = dominance_class(instr);
+	struct StrHashEntry *dom_class_entry;
+	dom_class_entry = sht_lookup(bb->dom_instr_tree, dom_class_name);
+	if ( dom_class_entry != NULL ) {
+		instr->dominator = dom_class_entry->instruction;
 	}
+
+	//Find bb's instrs length and bb's latest_instr
+	int instrs_len = 0;
+	struct Instruction *latest_i;
+	latest_instr = bb->instrs->head;
+	for (; latest_i->next != NULL; latest_i = latest_i->next) {
+		++instrs_len;
+	}
+	++instrs_len;//b/c you miss the latest_i by stopping early.
+
 	struct Instruction *identical;
 	if ( exec_cse == true ) {
-		identical = find_dominating_identical(instr);// calloc'd w/n
+
+		identical = find_dominating_identical(instr);// no need to calloc
 		if ( identical != NULL ) {
-			rv = new_operand(INSTRUCTION);
-			rv->instr->idx = instr->number;
-			return rv;
+
+			return new_operand(INSTRUCTION, identical->number);
 		} else if ( strncmp(instr->name, "load", 5) == 0 &&
-								bb->instrs_len > 0 &&
-								strncmp(bb->latest_instr->name, "adda", 5) == 0 &&
-								instr->ops->head->instr->idx == bb->latest_instr->number) {
+								instrs_len > 0 &&
+								strncmp(latest_i->name, "adda", 5) == 0 &&
+								instr->ops->head->type == latest_i->type &&
+								instr->ops->head->instruction->number ==
+								latest_i->number
+								) {
+
 			struct Instruction *identical_adda;
-			identical_adda = find_dominating_identical(bb->latest_instr);
+			identical_adda = find_dominating_identical(latest_i);
 			if ( identical_adda != NULL ) {
+
 				struct OperationList *orig_ops = instr->ops;
-				struct Operand *adda_op = new_operand(INSTRUCTION);
-				adda_op->instr->idx = identical_adda->number;
-				push_operand(instr->ops, adda_op);
+				instr->ops = new_operand_list();
+				push_operand(instr->ops,
+										 new_operand(INSTRUCTION,
+																 identical_adda->number));
 				identical = find_dominating_identical(instr);
 				if ( identical != NULL ) {
+
 					delete_instruction(bb->instrs, bb->latest_instr);
-					rv = new_operand(INSTRUCTION);
-					rv->instr->idx = identical->number;
-					return rv;
+					return new_operand(INSTRUCTION, identical->number);
 				} else {
+
+					free_operand_list(&(instr->ops));
 					instr->ops = orig_ops;
 				}//identical!=NULL
 			}//identical_adda!=NULL
@@ -195,11 +213,9 @@ basic_block_emit (struct BasicBlock *bb,
 	}//exec_cse
 	instr->number = instr_num;
 	push_instruction(bb->instrs, instr);
-	dom_class->instruction = instr;
-	rv = new_operand(INSTRUCTION);
-	rv->instr->idx = instr->number;
+	dom_class_entry->instruction = instr;
 
-	return rv;
+	return new_operand(INSTRUCTION, instr->number);
 }
 
 void
@@ -283,4 +299,66 @@ copy_block_ctx_params (struct BasicBlock *dst,
 	dst->locals_dim     = src->locals_dim;
 	dst->dom_instr_tree = src->dom_instr_tree;
 	dst->function       = src->function;
+}
+
+void
+free_block_group (struct BlockGroup **bg)
+{
+	//Don't free `entry` it was freed elsewhere
+	//Don't free `exit` it was freed elsewhere
+	free_str_list((*bg)->arg_names);
+	free((*bg)->name);
+	free(*bg);
+}
+
+void
+free_basic_block (struct BasicBlock **bb)
+{
+	free_instruction_list((*bb)->instrs);
+	//Don't free `lastest_instr` it was freed in line above.
+	free((*bb)->label);
+	//Don't free `successors` it was freed elsewhere
+	//Don't free `next_s` it was never calloc'd
+	free((*bb)->predecessors);//Just the pointer not the whole list
+	//Don't free `next_p` it was never calloc'd
+	free_sht((*bb)->locals_op);
+	free_sht((*bb)->locals_dim);
+	free_block_group((*bb)->function);
+	free((*bb)->dominatees);//Just the pointer not the whole list
+	//Don't free `next_d` it was never calloc'd
+	free_sht((*bb)->dom_instr_tree);
+	//Don't free `next_r` it was never calloc'd
+	free(*bb);
+}
+
+/**
+ * We only free the successors list because the predecessors and
+ * dominatees lists' basic blocks will be simultaneously freed as a
+ * consequence of freeing the successors list.
+ */
+void
+free_successors_basic_block_list (struct BasicBlockList **successors)
+{
+	struct BasicBlock *cur = (*successors)->head;
+	struct BasicBlock *prv;
+  while ( cur != NULL ) {
+		prv = cur;
+		cur = cur->next_s;
+		free_basic_block(&prv);
+	}
+	free(*successors);
+}
+
+void
+free_roots_basic_block_list (struct BasicBlockList **roots)
+{
+	struct BasicBlock *cur = (*roots)->head;
+	struct BasicBlock *prv;
+  while ( cur != NULL ) {
+		prv = cur;
+		cur = cur->next_r;
+		free_successors_basic_block_list(&(prv->successors));
+		free_basic_block(&prv);
+	}
+	free(*roots);
 }

@@ -39,8 +39,7 @@ main (int argc,
 	// Free heap memory
 	free_parser(&psr);
 	free_ast(&ast);
-	//TODO
-	//	free_ir(&ir);
+	free_compiler_ctx(&ir);
 
 	return 0;
 }

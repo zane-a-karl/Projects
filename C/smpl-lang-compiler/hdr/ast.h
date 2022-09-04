@@ -15,6 +15,8 @@
 #include "../hdr/return_stmt.h"
 
 #include "../hdr/interpreter_ctx.h"
+#include "../hdr/operand.h"
+#include "../hdr/compiler_ctx.h"
 
 #include <graphviz/cgraph.h>
 
@@ -101,15 +103,15 @@ interpret_ast_node (struct AstNode *n,
 int
 interpret_ast (struct Ast *ast);
 
-void
+struct Operand *
 compile_ast_node (struct AstNode *n,
 									struct CompilerCtx *cctx);
 
 void
-free_ast_node (struct AstNode *node);
+free_ast_node (struct AstNode **node);
 
 void
-free_ast_node_list (struct AstNodeList *anl);
+free_ast_node_list (struct AstNodeList **anl);
 
 void
 free_ast (struct Ast **ast);

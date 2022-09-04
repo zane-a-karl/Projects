@@ -49,9 +49,6 @@ struct StrHashEntry *
 sht_delete (struct StrHashTable *sht,
 						char                *name);
 
-char *
-deep_copy_str (char *src);
-
 void
 deep_copy_sht_entries (struct StrHashTable *src,
 											 struct StrHashTable *dst);

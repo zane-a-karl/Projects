@@ -88,16 +88,6 @@ sht_delete (struct StrHashTable *sht,
 	return i;
 }
 
-char *
-deep_copy_str (char *src)
-{
-	char *dst = calloc(MAX_VAR_NAME_LEN, sizeof(char));
-	for (int i = 0; i < MAX_VAR_NAME_LEN; ++i) {
-		dst[i] = src[i];
-	}
-	return dst;
-}
-
 // Assume `dst` is already calloc'd
 void
 deep_copy_sht_entries (struct StrHashTable *src,
@@ -129,8 +119,22 @@ void
 free_she (struct StrHashEntry **she)
 {
 	free((*she)->name);
-	if ( (*she)->type == DATA ) {
+	switch ( (*she)->type ) {
+	case DATA:
 		free((*she)->data);
+		break;
+	case NODE:
+		//Don't free the node as it will be freed elsewhere
+		break;
+	case OP:
+		//Not sure if you need to free this or if it's freed elsewhere
+		break;
+	case INST:
+		//Not sure if you need to free this or if it's freed elsewhere
+		break;
+	case BB:
+		//Not sure if you need to free this or if it's freed elsewhere
+		break;		
 	}
 	free(*she);
 }

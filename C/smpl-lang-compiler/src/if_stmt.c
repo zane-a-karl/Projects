@@ -97,13 +97,12 @@ compile_if_stmt (struct AstNode *n,
 	compile_conditional_jump(n->if_stmt->condition, cctx, else_block);
 
 	cctx->cur_block = then_block;
-	struct Operand *label_op = new_operand(LABEL);
 	struct AstNode *i = n->if_stmt->then_stmts->head;
 	for (; i != NULL; i = i->next) {
 		compile_ast_node(i, cctx);
 	}
-	label_op->label->name = join_block->label;
-	compile_ctx_emit(cctx, "bra", label_op, false);
+	struct Operand *label_op = new_operand(LABEL, join_block->label);
+	compiler_ctx_emit(cctx, false, false, 2, "bra", label_op);
 	add_successor(cctx->cur_block, join_block);
 	then_block = cctx->cur_block;
 
@@ -118,7 +117,7 @@ compile_if_stmt (struct AstNode *n,
 	else_block = cctx->cur_block;
 
 	cctx->cur_block = join_block;
-	struct SomeOpContainer *a, *b;
+	struct OpBox a, b;
 	struct Operand *phi_op;
 	struct Operand *then_op = new_operand(LABEL);
 	struct Operand *else_op = new_operand(LABEL);
@@ -128,14 +127,15 @@ compile_if_stmt (struct AstNode *n,
 		for (; j != NULL; j = j->next) {
 			a = get_local(then_block, j->name);
 			b = get_local(else_block, j->name);
-			if ( a->val_op == b->val_op) {
+			if ( a.op == b.op) {
 				continue;
 			}
-			then_op->label->name = then_block->label;
-			else_op->label->name = else_block->label;
-			phi_op = compiler_ctx_emit(cctx, "phi",
-																 then_op, a->val_op,
-																 else_op, b->val_op);
+			then_op = new_operand(LABEL, then_block->label);
+			else_op = new_operand(LABEL, else_block->label);
+			phi_op = compiler_ctx_emit(cctx, true, false, 5,
+																 "phi",
+																 then_op, a.op,
+																 else_op, b.op);
 			set_local_op(cctx->cur_block, j->name, phi_op);
 		}
 	}

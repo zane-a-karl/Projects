@@ -67,7 +67,7 @@ create_func_decl_agedge_set (char *label,
 		create_agedge_set(i);
 	}
 	for (struct AstNode *i = n->func_decl->body->stmts->head; i != NULL; i = i->next) {
-n
+
 		edge = agedge(n->graph, n->self, i->self, "", TRUE);
 		agset(edge, "label", "Body");
 		create_agedge_set(i);
@@ -95,11 +95,11 @@ interpret_func_decl (struct AstNode *n,
 	return 0x7FFFFFFF;//a.k.a. NULL
 }
 
-void
+struct Operand *
 compile_func_decl (struct AstNode *n,
 									 struct CompilerCtx *cctx)
 {
-	struct BasicBlock *old_root = cctx->cur_block;
+	struct BasicBlock *old_root      = cctx->cur_block;
 	struct BasicBlock *fn_root_block = new_basic_block(cctx);
 	struct BlockGroup *fn;
 	char *name  = n->func_decl->fn_ident->identifier->name;
@@ -108,21 +108,19 @@ compile_func_decl (struct AstNode *n,
 	fn->entry   = fn_root_block;
 	struct AstNode *i = n->func_decl->param_idents->head;
 	for (; i != NULL; i = i->next) {
-		push_str(fn->arg_names, i->identifier->name);
+		push_str_node(fn->arg_names, i->identifier->name);
 	}
 	fn_root_block->function = fn;
 	cctx->cur_block         = fn_root_block;
 	push_basic_block(cctx->roots, fn_root_block, ROOTS);
 
 	//Compile the fn arguments
-	struct Operand *a_op;
 	i = n->func_decl->param_idents->head;
 	for (; i != NULL; i = i->next) {
 		
 		declare_local(cctx->cur_block, i->identifier->name, NULL);
-		a_op = new_operand(ARGUMENT);
-		a_op->argument->name = deep_copy_str(i->identifier->name);
-		set_local_op(cctx->cur_block, i->identifier->name, a_op);
+		set_local_op(cctx->cur_block, i->identifier->name,
+								 new_operand(ARGUMENT, i->identifier->name));
 	}
 
 	i = n->func_decl->body->local_vars->head;
@@ -138,4 +136,6 @@ compile_func_decl (struct AstNode *n,
 	//Compiling stmts resutls in a single join block at the end
 	fn->exit = cctx->cur_block;
 	cctx->cur_block = old_root;
+
+	return NULL;
 }

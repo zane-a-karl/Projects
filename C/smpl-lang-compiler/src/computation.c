@@ -113,7 +113,7 @@ compile_computation (struct AstNode *n,
 		compile_ast_node(i, cctx);
 	}
 	main_fn->exit = cctx->cur_block;
-	compiler_ctx_emit(cctx, false, 1, "end");
+	compiler_ctx_emit(cctx, false, false, 1, "end");
 
 	return NULL;
 }

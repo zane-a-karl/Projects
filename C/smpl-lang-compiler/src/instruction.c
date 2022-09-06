@@ -15,13 +15,24 @@ new_instruction (char   *name,
 	i->name               = deep_copy_str(name);
 
 	i->ops                = new_operand_list();
-	for (int j = 0; j < n_args; ++j) {
+	if ( n_args != 4 ) {
+		for (int j = 0; j < n_args; ++j) {
+			push_operand(i->ops, va_arg(args, struct Operand *));
+		}
+	} else if ( n_args == 4 ) {
+		
+		va_arg(args, int);//consume flag arg (bools promoted to ints)
 		push_operand(i->ops, va_arg(args, struct Operand *));
+		struct OperandList *list = va_arg(args, struct OperandList *);
+		struct Operand *k = list->head;
+		for (int j = 0; j < n_args && k != NULL; ++j, k = k->next) {
+			push_operand(i->ops, k);
+		}
 	}
 	
-	i->i_num              = -1;
+	i->number             = -1;
 	i->produces_output    = produces_output;
-	i->dominators         = NULL;
+	i->dominator          = NULL;
 	i->next               = NULL;
 
 	return i;
@@ -30,8 +41,9 @@ new_instruction (char   *name,
 struct InstructionList *
 new_instruction_list ()
 {
-	struct InstructionList *il = calloc(1, sizeof(InstructionList));
-	il->head                   = NULL;
+	struct InstructionList *il;
+	il       = calloc(1, sizeof(struct InstructionList));
+	il->head = NULL;
 
 	return il;
 }
@@ -102,7 +114,7 @@ find_dominating_identical (struct Instruction *instr)
 			break;
 		}
 		if ( eq_operand_lists(instr->ops, dom_instr->ops) ) {
-			candiate = dom_instr;
+			candidate = dom_instr;
 			break;
 		}
 		dom_instr = dom_instr->dominator;

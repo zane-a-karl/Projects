@@ -2,6 +2,7 @@
 #define _STR_HASH_TABLE_H_
 
 #include "../hdr/constants.h"
+#include "../hdr/utils.h"
 
 #include <stdio.h>
 #include <stdlib.h>

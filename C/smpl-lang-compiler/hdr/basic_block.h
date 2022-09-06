@@ -1,12 +1,15 @@
 #ifndef _BASIC_BLOCK_H_
 #define _BASIC_BLOCK_H_
 
+#include "../hdr/forward_declarations.h"
+
 #include "../hdr/ast.h"
 #include "../hdr/str_hash_table.h"
 #include "../hdr/str_list.h"
 #include "../hdr/instruction.h"
 #include "../hdr/operand.h"
 #include "../hdr/constants.h"
+#include "../hdr/compiler_ctx.h"
 
 #include <stdarg.h>
 #include <stdbool.h>
@@ -20,14 +23,8 @@ enum BasicBlockListType {
 };
 
 
-//Necessary Forward Declaration
-struct BasicBlockList;
-struct BlockGroup;
-
 struct BasicBlock {
 	struct InstructionList *instrs;
-	int                     instrs_len;
-	struct Instruction     *latest_instr;
 	char                   *label;
 	struct BasicBlockList  *successors;
 	struct BasicBlock      *next_s;
@@ -103,7 +100,7 @@ declare_local (struct BasicBlock *bb,
 							 char              *name,
 							 int               *dims);
 
-struct SomeOpContainer
+struct OpBox
 get_local (struct BasicBlock *bb,
 					 char              *name);
 
@@ -113,14 +110,14 @@ set_local_op (struct BasicBlock *bb,
 							struct Operand    *val);
 
 void
-rename_op (struct BasicBlock *bb,
-					 struct Operand    *old_op,
-					 struct Operand    *new_op,
-					 struct BasicBlock *visited);
+rename_op (struct BasicBlock   *bb,
+					 struct Operand      *old_op,
+					 struct Operand      *new_op,
+					 struct StrHashTable *visited);
 
 void
 copy_block_ctx_params (struct BasicBlock *dst,
-											 struct BasicBLock *src);
+											 struct BasicBlock *src);
 
 void
 free_block_group (struct BlockGroup **bg);

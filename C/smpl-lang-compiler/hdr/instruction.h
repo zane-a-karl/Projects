@@ -1,19 +1,21 @@
 #ifndef _INSTRUCTION_H_
 #define _INSTRUCTION_H_
 
+#include "../hdr/forward_declarations.h"
+
 #include "../hdr/operand.h"
 #include "../hdr/utils.h"//for `deep_copy_str()`
 
-//Necessary Forward Declaration
-struct InstructionList;
+#include <stdarg.h>
+#include <string.h>
 
 struct Instruction {
-	char                   *name;
-	struct OperationList   *ops;
-	int                     number;//I.e. the instruction number
-	bool                    produces_output;
-	struct Instruction     *dominator;//Instr that dominates this one
-	struct Instruction     *next;
+	char               *name;
+	struct OperandList *ops;
+	int                 number;//I.e. the instruction number
+	bool                produces_output;
+	struct Instruction *dominator;//Instr that dominates this one
+	struct Instruction *next;
 };
 
 struct InstructionList {
@@ -21,7 +23,10 @@ struct InstructionList {
 };
 
 struct Instruction *
-new_instruction (bool produces_output);
+new_instruction (char   *name,
+								 bool    produces_output,
+								 int     n_args,
+								 va_list args);
 
 struct InstructionList *
 new_instruction_list ();

@@ -3,6 +3,7 @@
 
 #include "../hdr/ast.h"
 #include "../hdr/interpreter_ctx.h"
+#include "../hdr/compiler_ctx.h"
 
 struct ArrayAccess {
 	struct AstNode     *ident;

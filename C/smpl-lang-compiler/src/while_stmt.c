@@ -79,49 +79,47 @@ compile_while_stmt (struct AstNode *n,
 	for (k = 0; k < MAX_NUM_VARS; ++k) {
 		j = body_block->locals_op->entries[k];
 		for (; j != NULL; j = j->next) {
-			orig_op = j->operand;
-			j->operand = new_operand(POSSPHI);
-			j->operand->op = orig_op;
+			orig_op    = j->operand;
+			j->operand = new_operand(POSSPHI, orig_op);
 		}
 	}
 	cctx->cur_block = body_block;
 	struct AstNode *i;
-	i = n->if_stmt->then_stmts->head;
+	i = n->while_stmt->do_stmts->head;
 	for (; i != NULL; i = i->next) {
 		compile_ast_node(i, cctx);
 	}
-	struct Operand *label_op = new_operand(LABEL);
-	label_op->label->name = head_block->label;
-	compiler_ctx_emit(cctx, "bra", label_op, false);
+	struct Operand *label_op = new_operand(LABEL, head_block->label);
+	compiler_ctx_emit(cctx, false, false, 2, "bra", label_op);
 	struct BasicBlock *body_end_block = cctx->cur_block;
 
 	cctx->cur_block = head_block;
-	struct SomeOpContainer *head, *body;
+	struct OpBox head_box, body_box;
 	struct Operand *wrapped_head_op, *renamed_op;
-	struct Operand *label_op1, label_op2;
+	struct Operand *label_op1, *label_op2;
 
 	for (k = 0; k < MAX_NUM_VARS; ++k) {
+
 		j = body_end_block->locals_op->entries[k];
 		for (; j != NULL; j = j->next) {
-			head            = get_local(head_block, j->name);
-			wrapped_head_op = new_operand(POSSPHI);
-			wrapped_head_op->poss_phi->op = head->val_op;
-			body            = get_local(body_end_block, j->name);
-			//TODO You need to check the names not the pointers!!
-			if ( body->val_op != wrapped_head_op ) {
+			head_box        = get_local(head_block, j->name);
+			wrapped_head_op = new_operand(POSSPHI, head_box.op);
+			body_box        = get_local(body_end_block, j->name);
+			// should I be checking the names or the pointers?
+			if ( strncmp(body_box.op->name,
+									 wrapped_head_op->name, 6) != 0 ) {
 
-				label_op1 = new_operand(LABEL);
-				label_op1->label->name = orig_block->label;
-				label_op2 = new_operand(LABEL);
-				label_op2->label->name = body_end_block->label;
-				renamed_op = compiler_ctx_emit(cctx, "phi",
-																			 label_op1, head->val_op,
-																			 label_op2, body->val_op);
-				rename_op(body_block, wrapped_head_op, renamed_op);
+				label_op1 = new_operand(LABEL, orig_block->label);
+				label_op2 = new_operand(LABEL, body_end_block->label);
+				renamed_op = compiler_ctx_emit(cctx, true, false, 5,
+																			 "phi",
+																			 label_op1, head_box.op,
+																			 label_op2, body_box.op);
+				rename_op(body_block, wrapped_head_op, renamed_op, NULL);
 				set_local_op(head_block, j->name, renamed_op);
 				set_local_op(body_block, j->name, renamed_op);
 			} else {
-				rename_op(body_block, wrapped_head_op, head->val_op);
+				rename_op(body_block, wrapped_head_op, head_box.op, NULL);
 			}//if
 		}//j for
 	}//k for

@@ -22,8 +22,8 @@ new_str_list ()
 
 // assume `new_data` already calloc'd
 void
-push_str (struct StrList *sl,
-					char           *new_data)
+push_str_node (struct StrList *sl,
+							 char           *new_data)
 {
 	struct StrNode *new_node = new_str_node(new_data);
 	struct StrNode *i = sl->head;

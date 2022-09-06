@@ -1,6 +1,8 @@
 #ifndef _AST_H_
 #define _AST_H_
 
+#include "../hdr/forward_declarations.h"
+
 #include "../hdr/number.h"
 #include "../hdr/identifier.h"
 #include "../hdr/computation.h"
@@ -34,8 +36,6 @@ enum AstNodeType {
 	WHSTMT,
 	RESTMT
 };
-
-struct AstNodeList;
 
 struct AstNode {
 	Agraph_t             *graph;

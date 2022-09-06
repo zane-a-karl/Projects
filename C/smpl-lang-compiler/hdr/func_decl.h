@@ -3,6 +3,7 @@
 
 #include "../hdr/ast.h"
 #include "../hdr/interpreter_ctx.h"
+#include "../hdr/str_list.h"
 
 #include <stdbool.h>
 #include <stdlib.h>
@@ -42,7 +43,7 @@ int
 interpret_func_decl (struct AstNode *n,
 										 struct InterpreterCtx *ictx);
 
-int
+struct Operand *
 compile_func_decl (struct AstNode *n,
 									 struct CompilerCtx *cctx);
 

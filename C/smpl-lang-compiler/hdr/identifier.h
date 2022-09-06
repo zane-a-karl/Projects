@@ -34,4 +34,8 @@ int
 interpret_identifier (struct AstNode *n,
 											struct InterpreterCtx *ictx);
 
+struct Operand *
+compile_identifier (struct AstNode *n,
+										struct CompilerCtx *cctx);
+
 #endif//_IDENTIFIER_H_

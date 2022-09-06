@@ -6,7 +6,7 @@ new_basic_block (struct CompilerCtx *cctx)
 {
 	cctx->block_ctr++;
 
-	struct BasicBlock *bb = calloc(1, sizeof(BasicBlock));
+	struct BasicBlock *bb = calloc(1, sizeof(struct BasicBlock));
 	bb->instrs            = new_instruction_list();
 	bb->label             = calloc(MAX_VAR_NAME_LEN, sizeof(char));
 	snprintf(bb->label, MAX_VAR_NAME_LEN, "BB%i", cctx->block_ctr);
@@ -44,7 +44,8 @@ new_block_group (char *name)
 	bg->arg_names         = new_str_list();
 	bg->name              = deep_copy_str(name);
 	bg->is_main           = false;
-	}
+
+	return bg;
 }
 
 /* assume `new_bb` already calloc'd
@@ -168,7 +169,7 @@ vbasic_block_emit (struct BasicBlock *bb,
 	//Find bb's instrs length and bb's latest_instr
 	int instrs_len = 0;
 	struct Instruction *latest_i;
-	latest_instr = bb->instrs->head;
+	latest_i = bb->instrs->head;
 	for (; latest_i->next != NULL; latest_i = latest_i->next) {
 		++instrs_len;
 	}
@@ -184,16 +185,15 @@ vbasic_block_emit (struct BasicBlock *bb,
 		} else if ( strncmp(instr->name, "load", 5) == 0 &&
 								instrs_len > 0 &&
 								strncmp(latest_i->name, "adda", 5) == 0 &&
-								instr->ops->head->type == latest_i->type &&
-								instr->ops->head->instruction->number ==
-								latest_i->number
+								strncmp(instr->ops->head->name,
+												latest_i->name, 5) == 0
 								) {
 
 			struct Instruction *identical_adda;
 			identical_adda = find_dominating_identical(latest_i);
 			if ( identical_adda != NULL ) {
 
-				struct OperationList *orig_ops = instr->ops;
+				struct OperandList *orig_ops = instr->ops;
 				instr->ops = new_operand_list();
 				push_operand(instr->ops,
 										 new_operand(INSTRUCTION,
@@ -201,7 +201,7 @@ vbasic_block_emit (struct BasicBlock *bb,
 				identical = find_dominating_identical(instr);
 				if ( identical != NULL ) {
 
-					delete_instruction(bb->instrs, bb->latest_instr);
+					delete_instruction(bb->instrs, latest_i);
 					return new_operand(INSTRUCTION, identical->number);
 				} else {
 
@@ -245,7 +245,7 @@ declare_local (struct BasicBlock *bb,
 	dimensions->data = dims;
 }
 
-struct SomeOpContainer
+struct OpBox
 get_local (struct BasicBlock *bb,
 					 char              *name)
 {
@@ -253,45 +253,67 @@ get_local (struct BasicBlock *bb,
 	if ( var == NULL ) {
 		throw_compiler_error("Access to undeclared local: ", name);
 	}
-	struct Operand *var_op     = var->op;
+	struct Operand *var_op    = var->operand;
 	struct StrHashEntry *dims = sht_lookup(bb->locals_dim, name);
 	if ( var_op == NULL ) {
-		return new_uninitialized_var_op(name);
+		return new_op_box(new_operand(UNINITVAR, name), dims->data);
 	}
-	struct SomeOpContainer tmp;
-	tmp->val_op = var_op;
-	tmp->dims = dims->data;
-	return tmp;
+	return new_op_box(var_op, dims->data);
 }
 
 void
 set_local_op (struct BasicBlock *bb,
 							char              *name,
-							struct Operand    *val)
+							struct Operand    *op)
 {
 	struct StrHashEntry *local = sht_lookup(bb->locals_op, name);
 	if ( local == NULL ) {
 		throw_compiler_error("Access to undeclared local: ", name);
 	}
-	local->operand = val;
+	local->operand = op;
 }
 
 void
-rename_op (struct BasicBlock *bb,
-					 struct Operand    *old_op,
-					 struct Operand    *new_op,
-					 struct BasicBlock *visited)
+rename_op (struct BasicBlock   *bb,
+					 struct Operand      *old_op,
+					 struct Operand      *new_op,
+					 struct StrHashTable *visited)
 {
-	int visited_len = 0;
 	if ( visited == NULL ) {
-		visited = realloc(visited, 1*sizeof(BasicBlock));
+		visited = new_str_hash_table();
 	}
-	for () {}
+	if ( sht_lookup(visited, bb->label) != NULL ) {
+		free_sht(&visited);
+		return;
+	}
+
+	struct OperandList *new_ops;
+	struct Instruction *i;
+	struct Operand *j;
+	for (i = bb->instrs->head; i != NULL; i = i->next) {
+		new_ops = new_operand_list();
+		for (j = i->ops->head; j != NULL; j = j->next) {
+			if ( eq_operands(j, old_op) ) {
+				push_operand(new_ops, new_op);
+			}//if
+		}//jfor
+		free_operand_list(&(i->ops));
+		//Can I do this or do I have to do what I wrote below?
+		i->ops = new_ops;
+		/* i->ops = NULL; */
+	  /* deep_copy_operand_list(i->ops, new_ops); */
+		/* free_operand_list(&(new_ops)); */
+	}//ifor
+
+	struct BasicBlock *succ = bb->successors->head;
+	for (; succ != NULL; succ = succ->next_s) {
+		rename_op(succ, old_op, new_op, visited);
+	}
 }
 
 void
 copy_block_ctx_params (struct BasicBlock *dst,
-											 struct BasicBLock *src)
+											 struct BasicBlock *src)
 {
 	//Should I deep copy all of these?!?!
 	//I think I should if I want to free things at the end :/
@@ -306,7 +328,7 @@ free_block_group (struct BlockGroup **bg)
 {
 	//Don't free `entry` it was freed elsewhere
 	//Don't free `exit` it was freed elsewhere
-	free_str_list((*bg)->arg_names);
+	free_str_list(&(*bg)->arg_names);
 	free((*bg)->name);
 	free(*bg);
 }
@@ -314,19 +336,19 @@ free_block_group (struct BlockGroup **bg)
 void
 free_basic_block (struct BasicBlock **bb)
 {
-	free_instruction_list((*bb)->instrs);
+	free_instruction_list(&(*bb)->instrs);
 	//Don't free `lastest_instr` it was freed in line above.
 	free((*bb)->label);
 	//Don't free `successors` it was freed elsewhere
 	//Don't free `next_s` it was never calloc'd
 	free((*bb)->predecessors);//Just the pointer not the whole list
 	//Don't free `next_p` it was never calloc'd
-	free_sht((*bb)->locals_op);
-	free_sht((*bb)->locals_dim);
-	free_block_group((*bb)->function);
+	free_sht(&(*bb)->locals_op);
+	free_sht(&(*bb)->locals_dim);
+	free_block_group(&(*bb)->function);
 	free((*bb)->dominatees);//Just the pointer not the whole list
 	//Don't free `next_d` it was never calloc'd
-	free_sht((*bb)->dom_instr_tree);
+	free_sht(&(*bb)->dom_instr_tree);
 	//Don't free `next_r` it was never calloc'd
 	free(*bb);
 }

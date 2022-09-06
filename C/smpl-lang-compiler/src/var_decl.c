@@ -88,7 +88,7 @@ interpret_var_decl (struct AstNode *n,
 	return 0x7FFFFFFF;
 }
 
-void
+struct Operand *
 compile_var_decl (struct AstNode *n,
 									struct CompilerCtx *cctx)
 {
@@ -105,7 +105,7 @@ compile_var_decl (struct AstNode *n,
 
 	//Store the values of the dimensions
 	i = n->var_decl->dims->head;
-	for (int j = 0; i != NULL, j < dims_len; i = i->next, ++j) {
+	for (int j = 0; i != NULL && j < dims_len; i = i->next, ++j) {
 		dims[j] = i->number->val;
 		allocation_size *= dims[j];
 	}
@@ -116,9 +116,11 @@ compile_var_decl (struct AstNode *n,
 	//Create a BB 'alloca' instruction to give the arr more space
 	struct Operand *base_addr;
 	if ( dims_len != 0 ) {
-		struct Operand *tmp = new_operand(IMMEDIATE);
-		tmp->val = allocation_size;
-		base_addr = compiler_ctx_emit(cctx, name, true);
+		base_addr =
+			compiler_ctx_emit(cctx, true, false, 2,
+												"alloca", new_operand(IMMEDIATE,
+																							allocation_size));
 		set_local_op(cctx->cur_block, name, base_addr);
 	}
+	return NULL;
 }

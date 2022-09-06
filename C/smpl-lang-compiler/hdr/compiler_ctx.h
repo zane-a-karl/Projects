@@ -1,6 +1,8 @@
 #ifndef _COMPILER_CTX_H_
 #define _COMPILER_CTX_H_
 
+#include "../hdr/forward_declarations.h"
+
 #include "../hdr/ast.h"
 #include "../hdr/basic_block.h"
 
@@ -21,10 +23,12 @@ struct CompilerCtx {
 struct CompilerCtx *
 new_compiler_ctx (bool cse_bool);
 
-void
-add_instruction_to_ctx (struct CompilerCtx *cctx,
-												char               *instr_name,
-												bool                produces_output);
+struct Operand *
+compiler_ctx_emit (struct CompilerCtx *cctx,
+									 bool                produces_output,
+									 bool                may_eliminate,
+									 int                 n_args,
+									 ...);
 
 void
 throw_compiler_error (char *err,
@@ -36,7 +40,7 @@ throw_compiler_warning (char *warn,
 
 struct CompilerCtx *
 compile (struct Ast *ast,
-				 bool cse_bool);
+				 bool        cse_bool);
 
 void
 free_compiler_ctx (struct CompilerCtx **cctx);

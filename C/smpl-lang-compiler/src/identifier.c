@@ -51,7 +51,8 @@ struct Operand *
 compile_identifier (struct AstNode *n,
 										struct CompilerCtx *cctx)
 {
-	struct SomeOpContainer *tmp;
-	tmp = get_local(cctx->cur_block, n->identifier->name);
-	return tmp->val_op;
+	struct OpBox ident_box;
+	ident_box = get_local(cctx->cur_block, n->identifier->name);
+
+	return ident_box.op;
 }

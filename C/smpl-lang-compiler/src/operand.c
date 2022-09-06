@@ -9,43 +9,47 @@ new_operand (enum OperandType type,
 	va_list args;
 	va_start(args, type);
 	switch ( type ) {
-	case 	IMMEDIATE:
-		op->immediate->val      = va_arg(args, int);
+	case IMMEDIATE:
+	case INSTRUCTION:
+		op->number = va_arg(args, int);
 		break;
 	case UNINITVAR:
-		op->uninit_var->name    = va_arg(args, char *);
-		break;
-	case INSTRUCTION:
-		op->instruction->number = va_arg(args, int);
-		break;
 	case ARGUMENT:
-		op->argument->name      = va_arg(args, char *);
-		break;
 	case LABEL:
-		op->label->name         = va_arg(args, char *);
-		break;
-	case FUNCTION:
-		op->function->name      = va_arg(args, char *);
+	case FN:
+		op->name   = deep_copy_str(va_arg(args, char *));
 		break;
 	case POSSPHI:
-		op->poss_phi->op        = va_arg(args, struct Operand *);
+		op->op     = va_arg(args, struct Operand *);
 		break;
 	default:
-		perror("Unrecognized operand type: ", type);
+		perror("(new_operand): Unknown operand type");
 		exit(1);
 		break;
 	}
 	va_end(args);
+
 	return op;
 }
 
 struct OperandList *
 new_operand_list ()
 {
-	struct OperandList *ol = calloc(1, sizeof(OperandList));
+	struct OperandList *ol = calloc(1, sizeof(struct OperandList));
 	ol->head               = NULL;
 
 	return ol;
+}
+
+struct OpBox
+new_op_box (struct Operand *op,
+						int            *dims)
+{
+	struct OpBox ob;
+	ob.op   = op;
+	ob.dims = dims;
+
+	return ob;
 }
 
 // assume `new_op` already calloc'd
@@ -64,6 +68,45 @@ push_operand (struct OperandList *ol,
 	}
 }
 
+struct Operand *
+deep_copy_operand (struct Operand *src)
+	{
+		struct Operand *dst;
+	switch ( src->type ) {
+	case IMMEDIATE:
+	case INSTRUCTION:
+		dst = new_operand(src->type, src->number);
+		break;
+	case UNINITVAR:
+	case ARGUMENT:
+	case LABEL:
+	case FN:
+		dst = new_operand(src->type, src->name);
+		break;
+	case POSSPHI:
+		dst = new_operand(src->type, src->op);
+		break;
+	default:
+		perror("(new_operand): Unknown operand type");
+		exit(1);
+		break;
+	}
+	return dst;
+}
+
+/**
+ * `new_list` will not be NULL, and will have at least one operand.
+ */
+struct OperandList *
+deep_copy_operand_list (struct OperandList *src)
+{
+	struct OperandList *dst = new_operand_list();
+	for (struct Operand *i = src->head; i != NULL; i = i->next) {
+		push_operand(dst, deep_copy_operand(i));
+	}
+	return dst;
+}
+
 bool
 eq_operands (struct Operand *op1,
 						 struct Operand *op2)
@@ -74,21 +117,17 @@ eq_operands (struct Operand *op1,
 		int n = MAX_VAR_NAME_LEN;
 		switch ( op1->type ) {
 		case 	IMMEDIATE:
-			return op1->immediate->val == op2->immediate->val;
-		case UNINITVAR:
-			return strncmp(op1->uninit_var->name, op2->uninit_var->name, n);
 		case INSTRUCTION:
-			return op1->instruction->val == op2->instruction->val;
+			return op1->number == op2->number;
+		case UNINITVAR:
 		case ARGUMENT:
-			return strncmp(op1->argument->label, op2->argument->name, n);
 		case LABEL:
-			return strncmp(op1->label->name, op2->label->name, n);
-		case FUNCTION:
-			return strncmp(op1->function->label, op2->function->name, n);
+		case FN:
+			return strncmp(op1->name, op2->name, n);
 		case POSSPHI:
-			return eq_operands(op1->operand, op2->operand);
+			return eq_operands(op1->op, op2->op);
 		default:
-			perror("Unrecognized operand type: ", type);
+			perror("(new_operand): Unknown operand type");
 			exit(1);
 			return false;
 		}
@@ -102,7 +141,7 @@ eq_operand_lists (struct OperandList *l1,
 	struct Operand *i1 = l1->head;
 	struct Operand *i2 = l2->head;
 	for (; i1 != NULL && i2 != NULL; i1 = i1->next, i2 = i2->next) {
-		if ( cmp_operands(i1, i2) ) {
+		if ( eq_operands(i1, i2) ) {
 			continue;
 		} else {
 			return false;
@@ -115,30 +154,23 @@ void
 free_operand (struct Operand **op)
 {
 	switch ( (*op)->type ) {
-	case 	IMMEDIATE:
-		break;
-	case UNINITVAR:
-		free((*op)->uninit_var->name);
-		break;
+	case IMMEDIATE:
 	case INSTRUCTION:
 		break;
+	case UNINITVAR:
 	case ARGUMENT:
-		free((*op)->argument->name);
-		break;
 	case LABEL:
-		free((*op)->argument->label);
-		break;
-	case FUNCTION:
-		free((*op)->function->name);
+	case FN:
+		free((*op)->name);
 		break;
 	case POSSPHI:
-		free_operand(&((*op)->operand));
+		free_operand(&((*op)->op));
 		break;
 	default:
-		perror("Unrecognized operand type: ", (*op)->type);
+		perror("(new_operand): Unknown operand type");
 		exit(1);
 		break;
-	}	
+	}
 }
 
 void
@@ -153,4 +185,3 @@ free_operand_list (struct OperandList **ol)
 	}
 	free(*ol);
 }
-

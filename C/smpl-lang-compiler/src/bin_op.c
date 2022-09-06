@@ -80,22 +80,23 @@ compile_bin_op (struct AstNode *n,
 {
 	struct Operand *a_op = compile_ast_node(n->bin_op->opa, cctx);
 	struct Operand *b_op = compile_ast_node(n->bin_op->opb, cctx);
+	int len = 3;
 	char *op = n->bin_op->op;
-	if ( strncmp(op, "+", 3) == 0 ) {
-		return compiler_ctx_emit(cctx, "add", a_op, b_op, true);
-	} else if ( strncmp(op, "-", 3) == 0 ) {
-		return compiler_ctx_emit(cctx, "sub", a_op, b_op, true);
-	} else if ( strncmp(op, "*", 3) == 0 ) {
-		return compiler_ctx_emit(cctx, "mul", a_op, b_op, true);
-	} else if ( strncmp(op, "/", 3) == 0 ) {
-		return compiler_ctx_emit(cctx, "div", a_op, b_op, true);
-	} else if ( strncmp(op, "<",  3) == 0 ||
-							strncmp(op, "<=", 3) == 0 ||
-							strncmp(op, ">",  3) == 0 ||
-							strncmp(op, ">=", 3) == 0 ||
-							strncmp(op, "==", 3) == 0 ||
-							strncmp(op, "!=", 3) == 0 ) {
-		return compiler_ctx_emit(cctx, "cmp", a_op, b_op, true);
+	if ( strncmp(op, "+", len) == 0 ) {
+		return compiler_ctx_emit(cctx, true, true, 3, "add", a_op, b_op);
+	} else if ( strncmp(op, "-", len) == 0 ) {
+		return compiler_ctx_emit(cctx, true, true, 3, "sub", a_op, b_op);
+	} else if ( strncmp(op, "*", len) == 0 ) {
+		return compiler_ctx_emit(cctx, true, true, 3, "mul", a_op, b_op);
+	} else if ( strncmp(op, "/", len) == 0 ) {
+		return compiler_ctx_emit(cctx, true, true, 3, "div", a_op, b_op);
+	} else if ( strncmp(op, "<", len) == 0 ||
+							strncmp(op, "<=", len) == 0 ||
+							strncmp(op, ">", len) == 0 ||
+							strncmp(op, ">=", len) == 0 ||
+							strncmp(op, "==", len) == 0 ||
+							strncmp(op, "!=", len) == 0 ) {
+		return compiler_ctx_emit(cctx, true, true, 3, "cmp", a_op, b_op);
 	} else {
 		throw_compiler_error("Unrecognized binary op: ", op);
 		return NULL;
@@ -110,24 +111,25 @@ compile_bin_op (struct AstNode *n,
 struct Operand *
 compile_conditional_jump (struct AstNode     *n,
 													struct CompilerCtx *cctx,
-													struct BasicBlock  *bb)
+													struct BasicBlock  *jump_bb)
 {
+	//AstNode *n is a condition in this case
 	struct Operand *cond_op  = compile_ast_node(n, cctx);
-	struct Operand *label_op = new_operand(LABEL);
-	label_op->label->name = bb->label;
+	struct Operand *lab_op   = new_operand(LABEL, jump_bb->label);
+	int len = 3;
 	char *op = n->bin_op->op;
-	if ( strncmp(op, ">=", 3) == 0 ) {
-		compiler_ctx_emit(cctx, "blt", cond_op, label_op, false);
-	} else if ( strncmp(op, ">", 3) == 0 ) {
-		compiler_ctx_emit(cctx, "ble", cond_op, label_op, false);
-	} else if ( strncmp(op, "<=", 3) == 0 ) {
-		compiler_ctx_emit(cctx, "bgt", cond_op, label_op, false);
-	} else if ( strncmp(op, "<", 3) == 0 ) {
-		compiler_ctx_emit(cctx, "bge", cond_op, label_op, false);
-	} else if ( strncmp(op, "!=",  3) == 0 ) {
-		compiler_ctx_emit(cctx, "beq", cond_op, label_op, false);
-	} else if ( strncmp(op, "==",  3) == 0 ) {
-		compiler_ctx_emit(cctx, "bne", cond_op, label_op, false);
+	if ( strncmp(op, ">=", len) == 0 ) {
+		compiler_ctx_emit(cctx, false, false, 3, "blt", cond_op, lab_op);
+	} else if ( strncmp(op, ">" , len) == 0 ) {
+		compiler_ctx_emit(cctx, false, false, 3, "ble", cond_op, lab_op);
+	} else if ( strncmp(op, "<=", len) == 0 ) {
+		compiler_ctx_emit(cctx, false, false, 3, "bgt", cond_op, lab_op);
+	} else if ( strncmp(op, "<" , len) == 0 ) {
+		compiler_ctx_emit(cctx, false, false, 3, "bge", cond_op, lab_op);
+	} else if ( strncmp(op, "!=", len) == 0 ) {
+		compiler_ctx_emit(cctx, false, false, 3, "beq", cond_op, lab_op);
+	} else if ( strncmp(op, "==", len) == 0 ) {
+		compiler_ctx_emit(cctx, false, false, 3, "bne", cond_op, lab_op);
 	} else {
 		throw_compiler_error("Unrecognized binary op: ", op);
 	}

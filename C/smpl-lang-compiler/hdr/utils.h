@@ -1,6 +1,8 @@
 #ifndef _UTILS_H_
 #define _UTILS_H_
 
+#include "../hdr/constants.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 

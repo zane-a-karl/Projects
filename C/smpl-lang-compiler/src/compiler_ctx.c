@@ -17,18 +17,19 @@ new_compiler_ctx (bool cse_bool)
 struct Operand *
 compiler_ctx_emit (struct CompilerCtx *cctx,
 									 bool                produces_output,
+									 bool                may_eliminate,
 									 int                 n_args,
 									 ...)
 {
 	struct Operand *result_op;
 	bool po = produces_output;
-	bool cse = cctx->exec_cse;
+	bool me = may_eliminate;
 	char *instr_name;
 	va_list args;
 	va_start(args, n_args);
 	instr_name = va_arg(args, char *);//First arg is always the name
-	result_op = vbasic_block_emit(cctx->cur_block, cctx->inctr_ctr,
-																instr_name, po, cse, n_args,
+	result_op = vbasic_block_emit(cctx->cur_block, cctx->instr_ctr,
+																instr_name, po, me, n_args,
 																args);
 	va_end(args);
 	cctx->instr_ctr++;
@@ -69,7 +70,7 @@ compile (struct Ast *ast,
 				 bool cse_bool)
 {
 	struct CompilerCtx *ir = new_compiler_ctx(cse_bool);
-	compile_ast_node(ast->root);
+	compile_ast_node(ast->root, ir);
 
 	return ir;
 }

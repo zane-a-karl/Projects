@@ -96,7 +96,8 @@ compile_array_access (struct AstNode *n,
 {
 	struct Operand *addr_op = compile_addr(n, cctx);
 	struct Operand *load_op;
-	load_op = compiler_ctx_emit(cctx, "load", addr_op, true);
+	load_op = compiler_ctx_emit(cctx, true, true, 2, "load", addr_op);
+
 	return load_op;
 }
 
@@ -105,36 +106,47 @@ compile_addr (struct AstNode *n,
 							struct CompilerCtx *cctx)
 {
 	char *name = n->arr_acc->ident->identifier->name;
-	struct SomeOpContainer *base_addr;
+	struct OpBox    base_addr_box;
 	struct Operand *addr_op;
 	struct Operand *base_addr_op;
 	int *dims;
-	base_addr    = get_local(cctx->cur_block, name);
-	base_addr_op = base_addr->val_op;
-	dims         = base_addr->dims;
-	struct Operarnd *offset_op = new_operand(IMMEDIATE);
-	offset_op->immediate->val = 0;
+	
+	base_addr_box = get_local(cctx->cur_block, name);
+	base_addr_op  = base_addr_box.op;
+	dims          = base_addr_box.dims;
+	struct Operand *offset_op = new_operand(IMMEDIATE, 0);
+	
 	struct AstNode *i = n->arr_acc->indices->head;
 	int dims_len = 0;
 	for (; i != NULL; i = i->next) {
 		dims_len++;
 	}
 	i = n->arr_acc->indices->head;
+
 	int j = 0;
-	struct Operand *idx_op, this_offset_op, stride_op, sizeof_int_op;
+	struct Operand *idx_op   , *this_offset_op;
+	struct Operand *stride_op, *sizeof_int_op;
 	for (; i != NULL && j < dims_len; i = i->next, ++j) {
-		idx_op = compile_ast_node(i, cctx);
-		stride_op = new_operand(IMMEDIATE);
+		
+		idx_op     = compile_ast_node(i, cctx);
+		stride_op  = new_operand(IMMEDIATE, 1);
 		for (int k = j+1; k < dims_len; ++k) {
-			stride_op->immediate->val *= dims[k];
+			stride_op->number *= dims[k];
 		}
-		this_offset_op = compiler_ctx_emit(cctx, "mul", idx_op, stride_op, true);
-		offset_op = compiler_ctx_emit(cctx, "add", offset_op, this_offset_op, true);
+		this_offset_op = compiler_ctx_emit(cctx, true, true, 3,
+																			 "mul",
+																			 idx_op, stride_op);
+		offset_op      = compiler_ctx_emit(cctx, true, true, 3,
+																			 "add",
+																			 offset_op, this_offset_op);
 	}
-	sizeof_int_op = new_operand(IMMEDIATE);
-	sizeof_int_op->immediate->val = 4;//4bytes to an int
-	offset_op = compiler_ctx_emit(cctx, "mul", offset_op, sizeof_int_op, true);
-	addr_op = compiler_ctx_emit(cctx, "adda", base_addr_op, offset_op, false);
+	sizeof_int_op    = new_operand(IMMEDIATE, 4);//4bytes to an int
+	offset_op        = compiler_ctx_emit(cctx, true, true, 3,
+																			 "mul",
+																			 offset_op, sizeof_int_op);
+	addr_op          = compiler_ctx_emit(cctx, true, false, 3,
+																			 "adda",
+																			 base_addr_op, offset_op);
 
 	return addr_op;
 }

@@ -1,8 +1,12 @@
 #ifndef _NUMBER_H_
 #define _NUMBER_H_
 
+//Forward Declarations
+struct CompilerCtx;
+
 #include "../hdr/ast.h"
 #include "../hdr/interpreter_ctx.h"
+#include "../hdr/compiler_ctx.h"
 
 #include <graphviz/cgraph.h>
 #include <stdio.h>
@@ -29,5 +33,9 @@ create_num_agedge_set (char *label,
 int
 interpret_number (struct AstNode *n,
 									struct InterpreterCtx *ictx);
+
+struct Operand *
+compile_number (struct AstNode *n,
+								struct CompilerCtx *cctx);
 
 #endif//_NUMBER_H_

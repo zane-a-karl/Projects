@@ -100,8 +100,9 @@ struct Operand *
 compile_assignment (struct AstNode *n,
 										struct CompilerCtx *cctx)
 {
-	struct Operand *rhs_op = compile_ast_node(n->assignment->rhs);
-	char *name;
+	struct Operand *rhs_op;
+	rhs_op = compile_ast_node(n->assignment->rhs, cctx);
+	char *name = NULL;
 	struct StrHashEntry *array;
 	struct Operand *addr_op;
 	if ( n->assignment->lhs->type == IDNT ) {
@@ -116,9 +117,9 @@ compile_assignment (struct AstNode *n,
 			throw_compiler_error("Assignment to undeclared array: ", name);
 		}
 		addr_op = compile_addr(n->assignment->lhs, cctx);
-		compile_ctx_emit(cctx, "store", rhs_op, addr_op, false);
+		compiler_ctx_emit(cctx, false, false, 3, "store", rhs_op, addr_op);
 	} else {
-		throw_compile_error("Unknown var decl type: ", name);
+		throw_compiler_error("Unknown var decl type: ", name);
 	}
 	return NULL;
 }

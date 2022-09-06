@@ -157,13 +157,16 @@ compile_func_call (struct AstNode *n,
 									 struct CompilerCtx *cctx)
 {
 	struct OperandList *arg_ops = new_operand_list();
-	struct Operand *fn_op;
+	struct Operand *fn_op, *rv_op;
 	struct AstNode *i = n->func_call->args->head;
+	int n_args = 0;
 	for (; i != NULL; i = i->next) {
 		push_operand(arg_ops, compile_ast_node(i, cctx));
+		++n_args;
 	}
-	fn_op = new_operand(FUNCTION);
-	fn_op->function->name = n->func_call->ident-identifier->name;
+	fn_op = new_operand(FN, n->func_call->ident->identifier->name);
+	rv_op = compiler_ctx_emit(cctx, false, false, 4,
+														"emit", false, fn_op, arg_ops);
 
-	return compiler_ctx_emit(cctx, "emit", fn_op, arg_ops, false);
+	return rv_op;
 }

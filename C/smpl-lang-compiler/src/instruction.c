@@ -83,7 +83,6 @@ delete_instruction (struct InstructionList *il,
 										struct Instruction     *to_delete)
 {
 	if ( to_delete == il->head ) {
-		free_instruction(&(il->head));
 		il->head = NULL;
 		return;
 	}
@@ -92,7 +91,6 @@ delete_instruction (struct InstructionList *il,
 	for (; cur != NULL; cur = cur->next) {
 		if ( cur == to_delete ) {
 			prv->next = cur->next;
-			free_instruction(&cur);
 			cur->next = NULL;
 			cur = NULL;
 			return;

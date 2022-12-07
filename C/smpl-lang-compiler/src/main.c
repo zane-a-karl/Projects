@@ -23,8 +23,9 @@ main (int argc,
 	struct Ast *ast = parse(psr, tlg);
 
 	//GENERATE THE GRAPHVIZ OF THE AST
-	//	gen_dot_graph(ast, stdout);
-	//	agwrite(tlg, stdout);
+	/* FILE *fout = fopen("output/Test1.dot", "w+"); */
+	/* gen_dot_graph(ast, fout); */
+	/* fclose(fout); */
 
 	//INTERPRET THE SMPL PROPGRAM AND OUTPUT THE RESULTS
 	//	int rv = interpret_ast(ast);
@@ -34,6 +35,10 @@ main (int argc,
 	//GENERATE THE GRAPHVIZ OF THE IR
 	bool cse_bool = false;
 	struct CompilerCtx *ir = compile(ast, cse_bool);
+	/* FILE *fout = fopen("output/Test1.dot", "w+"); */
+	/* gen_ir_dot_graph(ir, fout); */
+	/* fclose(fout); */
+	
 	
 
 	// Free heap memory

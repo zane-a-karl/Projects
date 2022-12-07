@@ -73,15 +73,15 @@ compile_while_stmt (struct AstNode *n,
 
 	struct BasicBlock *body_block = new_basic_block(cctx);
 	copy_block_ctx_params(body_block, cctx->cur_block);
-	struct Operand *saved_next;
+	//	struct Operand *saved_next;
 	struct StrHashEntry *j;
 	int k;
 	for (k = 0; k < MAX_NUM_VARS; ++k) {
 		j = body_block->locals_op->entries[k];
 		for (; j != NULL; j = j->next) {
-			saved_next = j->operand->next;
+			//			saved_next = j->operand->next;
 			j->operand = new_operand(POSSPHI, j->operand);
-			j->operand->next = saved_next;
+			//			j->operand->next = saved_next;
 		}
 	}
 	cctx->cur_block = body_block;
@@ -115,8 +115,8 @@ compile_while_stmt (struct AstNode *n,
 				label_op2 = new_operand(LABEL, body_end_block->label);
 				renamed_op = compiler_ctx_emit(cctx, true, false, 5,
 																			 "phi",
-																			 label_op1, head_box.op,
-																			 label_op2, body_box.op);
+																			 label_op1, deep_copy_operand(head_box.op),
+																			 label_op2, deep_copy_operand(body_box.op));
 				rename_op(body_block, wrapped_head_op, renamed_op, NULL);
 				set_local_op(head_block, j->name, renamed_op);
 				set_local_op(body_block, j->name, renamed_op);

@@ -180,7 +180,7 @@ vbasic_block_emit (struct BasicBlock *bb,
 	dom_class_entry = sht_lookup(bb->dom_instr_tree, dom_class_name);
 	if ( dom_class_entry != NULL ) {
 		instr->dominator = dom_class_entry->instruction;
-	} 
+	}
 
 	//Find bb's instrs length and bb's latest_instr
 	int instrs_len = 0;
@@ -267,7 +267,8 @@ declare_local (struct BasicBlock *bb,
 		throw_compiler_error("Redclaration of local var: ", name);
 	}
 
-	var_ent           = new_str_hash_entry(deep_copy_str(name), DATA);
+	var_ent           = new_str_hash_entry(deep_copy_str(name), OP);
+	var_ent->operand  = NULL;
 	var_ent->data_len = alloc_size;
 	sht_insert(bb->locals_op, var_ent);
 
@@ -382,6 +383,18 @@ copy_block_ctx_params (struct BasicBlock *dst,
 }
 
 void
+draw_root_graph (struct BasicBlock *root,
+								 struct CompilerCtx *ir)
+{
+	Agraph_t *graph = ir->graph;
+	Agnode_t *node = agnode(graph, root->label, TRUE);
+	agset(node, "label", root->label);
+	root->node = node;
+
+	
+}
+
+void
 free_block_group (struct BlockGroup **bg)
 {
 	//Don't free `entry` it was freed elsewhere
@@ -450,7 +463,7 @@ void
 free_dominatees_basic_block_list (struct BasicBlockList **dominatees)
 {
 	struct BasicBlock *cur = (*dominatees)->head;
-	if (cur != NULL) {	
+	if (cur != NULL) {
 		free_dominatees_basic_block_list( &(cur->dominatees) );
 	}
 	struct BasicBlock *prv;

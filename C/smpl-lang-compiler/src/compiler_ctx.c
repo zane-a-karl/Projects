@@ -10,6 +10,7 @@ new_compiler_ctx (bool cse_bool)
 	cc->cur_block = NULL;
 	cc->roots     = new_basic_block_list();
 	cc->exec_cse  = cse_bool;
+	cc->graph= agopen("Top Level Graph", Agdirected, NULL);
 
 	return cc;
 }
@@ -76,9 +77,19 @@ compile (struct Ast *ast,
 }
 
 void
+create_ir_node_set (struct CompilerCtx *ir)
+{
+	struct BasicBlock *i = ir->roots->head;
+	for (; i != NULL; i = i->next_r) {
+		draw_root_graph(i, ir);
+	}
+}
+
+void
 free_compiler_ctx (struct CompilerCtx **cctx)
 {
 	free_roots_basic_block_list(&((*cctx)->roots));
 	//Don't free cur_block as it will be freed elsewhere
+	agclose((*cctx)->graph);
 	free(*cctx);
 }

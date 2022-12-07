@@ -73,6 +73,9 @@ struct Operand *
 deep_copy_operand (struct Operand *src)
 {
 	struct Operand *dst;
+	if ( src == NULL ) {
+		return NULL;
+	}
 	switch ( src->type ) {
 	case IMMEDIATE:
 	case INSTRUCTION:

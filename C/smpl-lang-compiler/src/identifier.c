@@ -54,7 +54,7 @@ compile_identifier (struct AstNode *n,
 	struct OpBox ident_box;
 	ident_box = get_local(cctx->cur_block, n->identifier->name);
 
-	return ident_box.op;
+	return deep_copy_operand(ident_box.op);
 }
 
 void

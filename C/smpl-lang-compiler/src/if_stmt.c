@@ -145,6 +145,8 @@ free_if_stmt (struct AstNode **n)
 {
 	free_ast_node(&((*n)->if_stmt->condition));
 	free_ast_node_list(&((*n)->if_stmt->then_stmts));
-	free_ast_node_list(&((*n)->if_stmt->else_stmts));
+	if ( (*n)->if_stmt->else_stmts != NULL ) {
+		free_ast_node_list(&((*n)->if_stmt->else_stmts));
+	}
 	free((*n)->if_stmt);
 }

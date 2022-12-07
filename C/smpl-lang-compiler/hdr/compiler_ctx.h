@@ -6,6 +6,8 @@
 #include "../hdr/ast.h"
 #include "../hdr/basic_block.h"
 
+#include <graphviz/cgraph.h>
+
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -18,6 +20,7 @@ struct CompilerCtx {
 	struct BasicBlock     *cur_block;	
 	struct BasicBlockList *roots;
 	bool                   exec_cse;
+	Agraph_t              *graph;
 };
 
 struct CompilerCtx *
@@ -41,6 +44,9 @@ throw_compiler_warning (char *warn,
 struct CompilerCtx *
 compile (struct Ast *ast,
 				 bool        cse_bool);
+
+void
+create_ir_node_set (struct CompilerCtx *ir);
 
 void
 free_compiler_ctx (struct CompilerCtx **cctx);

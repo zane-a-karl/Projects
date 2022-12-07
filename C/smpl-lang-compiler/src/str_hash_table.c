@@ -21,7 +21,6 @@ new_str_hash_entry (char *name,
 	she           = calloc(1, sizeof(struct StrHashEntry));
 	she->name     = name;
 	she->type     = type;
-	she->data     = NULL;
 	she->data_len = 0;
 	she->next     = NULL;
 
@@ -101,7 +100,7 @@ deep_copy_sht (struct StrHashTable *src)
 			switch (j->type) {
 			case DATA:
 				tmp->data = calloc(j->data_len, sizeof(int));
-				for (k = 0; i < j->data_len; ++k) {
+				for (k = 0; k < j->data_len; ++k) {
 					tmp->data[k] = j->data[k];
 				}
 				break;

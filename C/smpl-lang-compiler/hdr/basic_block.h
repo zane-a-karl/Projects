@@ -11,6 +11,8 @@
 #include "../hdr/constants.h"
 #include "../hdr/compiler_ctx.h"
 
+#include <graphviz/cgraph.h>
+
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -37,6 +39,7 @@ struct BasicBlock {
 	struct StrHashTable    *dom_instr_tree;
 	struct BasicBlock      *next_r;//Points to next root BB
 	bool                    shallow_copy;
+	Agnode_t               *node;
 };
 
 struct BasicBlockList {
@@ -123,6 +126,10 @@ rename_op (struct BasicBlock   *bb,
 void
 copy_block_ctx_params (struct BasicBlock *dst,
 											 struct BasicBlock *src);
+
+void
+draw_root_graph (struct BasicBlock *root,
+								 struct CompilerCtx *ir);
 
 void
 free_block_group (struct BlockGroup **bg);

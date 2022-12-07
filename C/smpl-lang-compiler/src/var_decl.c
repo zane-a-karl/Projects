@@ -101,7 +101,10 @@ compile_var_decl (struct AstNode *n,
 	for (; i != NULL; i = i->next) {
 		dims_len++;
 	}
-	int *dims = calloc(dims_len, sizeof(int));
+	int *dims = NULL;
+	if ( dims_len != 0) {
+		dims = calloc(dims_len, sizeof(int));
+	}
 
 	//Store the values of the dimensions
 	i = n->var_decl->dims->head;

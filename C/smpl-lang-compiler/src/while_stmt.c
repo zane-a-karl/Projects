@@ -67,20 +67,21 @@ compile_while_stmt (struct AstNode *n,
 	struct BasicBlock *head_block = new_basic_block(cctx);
 	copy_block_ctx_params(head_block, cctx->cur_block);
 
-	add_successor(cctx->cur_block, head_block);
-
 	push_basic_block(cctx->cur_block->dominatees, head_block, DOMEES);
+
+	add_successor(cctx->cur_block, head_block);
 
 	struct BasicBlock *body_block = new_basic_block(cctx);
 	copy_block_ctx_params(body_block, cctx->cur_block);
-	struct Operand *orig_op;
+	struct Operand *saved_next;
 	struct StrHashEntry *j;
 	int k;
 	for (k = 0; k < MAX_NUM_VARS; ++k) {
 		j = body_block->locals_op->entries[k];
 		for (; j != NULL; j = j->next) {
-			orig_op    = j->operand;
-			j->operand = new_operand(POSSPHI, orig_op);
+			saved_next = j->operand->next;
+			j->operand = new_operand(POSSPHI, j->operand);
+			j->operand->next = saved_next;
 		}
 	}
 	cctx->cur_block = body_block;
@@ -106,8 +107,9 @@ compile_while_stmt (struct AstNode *n,
 			wrapped_head_op = new_operand(POSSPHI, head_box.op);
 			body_box        = get_local(body_end_block, j->name);
 			// should I be checking the names or the pointers?
-			if ( strncmp(body_box.op->name,
-									 wrapped_head_op->name, 6) != 0 ) {
+			/* if ( strncmp(body_box.op->name, */
+			/* 						 wrapped_head_op->name, 6) != 0 ) { */
+			if ( !eq_operands(body_box.op, wrapped_head_op) ) {
 
 				label_op1 = new_operand(LABEL, orig_block->label);
 				label_op2 = new_operand(LABEL, body_end_block->label);
@@ -137,4 +139,12 @@ compile_while_stmt (struct AstNode *n,
 	cctx->cur_block = exit_block;
 
 	return NULL;
+}
+
+void
+free_while_stmt (struct AstNode **n)
+{
+	free_ast_node(&((*n)->while_stmt->condition));
+	free_ast_node_list(&((*n)->while_stmt->do_stmts));
+	free((*n)->while_stmt);
 }

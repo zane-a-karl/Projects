@@ -117,3 +117,12 @@ compile_computation (struct AstNode *n,
 
 	return NULL;
 }
+
+void
+free_computation (struct AstNode **n)
+{
+	free_ast_node_list(&((*n)->computation->var_decls));
+	free_ast_node_list(&((*n)->computation->func_decls));
+	free_ast_node_list(&((*n)->computation->stmts));
+	free((*n)->computation);
+}

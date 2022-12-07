@@ -20,12 +20,27 @@ new_str_list ()
 	return sl;
 }
 
-// assume `new_data` already calloc'd
+struct StrNode *
+deep_copy_str_node (struct StrNode *src)
+{
+	return new_str_node(deep_copy_str(src->data));
+}
+
+struct StrList *
+deep_copy_str_list (struct StrList *src)
+{
+	struct StrList *dst = new_str_list();
+	for (struct StrNode *i = src->head; i != NULL; i = i->next) {
+		push_str_node(dst, deep_copy_str_node(i));
+	}
+	return dst;
+}
+
+// assume `new_node` already calloc'd
 void
 push_str_node (struct StrList *sl,
-							 char           *new_data)
+							 struct StrNode *new_node)
 {
-	struct StrNode *new_node = new_str_node(new_data);
 	struct StrNode *i = sl->head;
 	if ( i == NULL ) {
 		sl->head = new_node;

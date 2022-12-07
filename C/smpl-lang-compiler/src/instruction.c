@@ -15,19 +15,21 @@ new_instruction (char   *name,
 	i->name               = deep_copy_str(name);
 
 	i->ops                = new_operand_list();
-	if ( n_args != 4 ) {
+	if ( n_args != 3 ) {
 		for (int j = 0; j < n_args; ++j) {
 			push_operand(i->ops, va_arg(args, struct Operand *));
 		}
-	} else if ( n_args == 4 ) {
-		
-		va_arg(args, int);//consume flag arg (bools promoted to ints)
+	} else if ( n_args == 3 ) {
+		// This first va_arg was originally a boolean flag hence the below comment
+		// consume flag arg (bools promoted to ints)
+		int n_fn_args = va_arg(args, int);
 		push_operand(i->ops, va_arg(args, struct Operand *));
 		struct OperandList *list = va_arg(args, struct OperandList *);
 		struct Operand *k = list->head;
-		for (int j = 0; j < n_args && k != NULL; ++j, k = k->next) {
+		for (int j = 0; j < n_fn_args/* && k != NULL*/; ++j, k = k->next) {
 			push_operand(i->ops, k);
 		}
+		// Do I need to free 'list'?!?!?!?!?!?!
 	}
 	
 	i->number             = -1;
@@ -66,9 +68,9 @@ push_instruction (struct InstructionList *il,
 
 void
 delete_instruction (struct InstructionList *il,
-										struct Instruction     *instr)
+										struct Instruction     *to_delete)
 {
-	if ( instr == il->head ) {
+	if ( to_delete == il->head ) {
 		free_instruction(&(il->head));
 		il->head = NULL;
 		return;
@@ -76,7 +78,7 @@ delete_instruction (struct InstructionList *il,
 	struct Instruction *prv = il->head;
 	struct Instruction *cur = il->head->next;
 	for (; cur != NULL; cur = cur->next) {
-		if ( cur == instr ) {
+		if ( cur == to_delete ) {
 			prv->next = cur->next;
 			free_instruction(&cur);
 			cur->next = NULL;
@@ -126,9 +128,12 @@ void
 free_instruction (struct Instruction **instr)
 {
 	free((*instr)->name);
+	(*instr)->name = NULL;
 	free_operand_list(&((*instr)->ops));
 	//don't free dominator b/c it'll be freed elsewhere
 	//don't free next b/c it'll be freed elsewhere
+	free(*instr);
+	*instr = NULL;
 }
 
 void
@@ -142,4 +147,5 @@ free_instruction_list (struct InstructionList **il)
 		free_instruction(&prv);
 	}
 	free(*il);
+	*il = NULL;
 }

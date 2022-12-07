@@ -22,7 +22,6 @@ enum BasicBlockListType {
 	DOMEES
 };
 
-
 struct BasicBlock {
 	struct InstructionList *instrs;
 	char                   *label;
@@ -37,6 +36,7 @@ struct BasicBlock {
 	struct BasicBlock      *next_d;
 	struct StrHashTable    *dom_instr_tree;
 	struct BasicBlock      *next_r;//Points to next root BB
+	bool                    shallow_copy;
 };
 
 struct BasicBlockList {
@@ -60,6 +60,9 @@ new_basic_block_list ();
 
 struct BlockGroup *
 new_block_group (char *name);
+
+struct BlockGroup *
+deep_copy_block_group (struct BlockGroup *src);
 
 void
 push_basic_block (struct BasicBlockList  *bbl,
@@ -98,7 +101,9 @@ add_successor (struct BasicBlock *bb,
 void
 declare_local (struct BasicBlock *bb,
 							 char              *name,
-							 int               *dims);
+							 int               *dims,
+							 int                dims_len,
+							 int                alloc_size);
 
 struct OpBox
 get_local (struct BasicBlock *bb,
@@ -127,6 +132,9 @@ free_basic_block (struct BasicBlock **bb);
 
 void
 free_successors_basic_block_list (struct BasicBlockList **successors);
+
+void
+free_dominatees_basic_block_list (struct BasicBlockList **dominatees);
 
 void
 free_roots_basic_block_list (struct BasicBlockList **roots);

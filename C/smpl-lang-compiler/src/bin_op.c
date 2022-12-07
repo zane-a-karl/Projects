@@ -135,3 +135,12 @@ compile_conditional_jump (struct AstNode     *n,
 	}
 	return NULL;
 }
+
+void
+free_bin_op (struct AstNode **n)
+{
+	free_ast_node(&((*n)->bin_op->opa));
+	free((*n)->bin_op->op);
+	free_ast_node(&((*n)->bin_op->opb));
+	free((*n)->bin_op);
+}

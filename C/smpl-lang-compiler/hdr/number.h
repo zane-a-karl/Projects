@@ -38,4 +38,7 @@ struct Operand *
 compile_number (struct AstNode *n,
 								struct CompilerCtx *cctx);
 
+void
+free_number (struct AstNode **n);
+
 #endif//_NUMBER_H_

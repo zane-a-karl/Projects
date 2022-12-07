@@ -40,3 +40,9 @@ compile_number (struct AstNode *n,
 {
 	return new_operand(IMMEDIATE, n->number->val);
 }
+
+void
+free_number (struct AstNode **n)
+{
+	free((*n)->number);
+}

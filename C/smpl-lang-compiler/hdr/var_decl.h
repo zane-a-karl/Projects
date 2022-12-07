@@ -30,4 +30,7 @@ struct Operand *
 compile_var_decl (struct AstNode *n,
 									struct CompilerCtx *cctx);
 
+void
+free_var_decl (struct AstNode **n);
+
 #endif//_VAR_DECL_H_

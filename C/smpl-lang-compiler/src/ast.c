@@ -136,20 +136,27 @@ push_ast_node (struct AstNodeList *anl,
 
 /**
  * `new_list` will not be NULL, and will have at least one node.
+ * NOTE We need to free the `new_list` pointer
+ *  concatenated to `anl`. If not it'll just
+ * hang around and take up and then leak memory at the end :(
  */
 void
 concat_ast_list (struct AstNodeList *anl,
-								 struct AstNodeList *new_list)
+								 struct AstNodeList **new_list)
 {
 	struct AstNode *an = anl->head;
 	if ( an == NULL ) {
-		anl->head = new_list->head;
+		anl->head = (*new_list)->head;
+		free(*new_list);
+		*new_list = NULL;
 		return;
 	}
 	while ( an->next != NULL ) {
 		an = an->next;
 	}
-	an->next = new_list->head;
+	an->next = (*new_list)->head;
+	free(*new_list);
+	*new_list = NULL;
 }
 
 /**
@@ -301,77 +308,52 @@ compile_ast_node (struct AstNode *n,
 }
 
 void
-free_ast_node (struct AstNode **node)
+free_ast_node (struct AstNode **n)
 {
-	switch ((*node)->type) {
-	case 	IDNT:
-		free((*node)->identifier->name);
-		free((*node)->identifier);
+	switch ((*n)->type) {
+	case IDNT:
+		free_identifier(n);
 		break;
 	case NUM:
-		free((*node)->number);
+		free_number(n);
 		break;
 	case ARRACC:
-		free_ast_node(&(*node)->arr_acc->ident);
-		free_ast_node_list(&(*node)->arr_acc->indices);
-		free((*node)->arr_acc);
+		free_arr_acc(n);
 		break;
   case VARDECL:
-		free_ast_node(&(*node)->var_decl->ident);
-		free_ast_node_list(&(*node)->var_decl->dims);
-		free((*node)->var_decl);
+		free_var_decl(n);
 		break;
 	case FUNCDECL:
-		free_ast_node(&(*node)->func_decl->fn_ident);
-		free_ast_node_list(&(*node)->func_decl->param_idents);
-		free_ast_node_list(&(*node)->func_decl->body->local_vars);
-		free_ast_node_list(&(*node)->func_decl->body->stmts);
-		free((*node)->func_decl->body);
-		free((*node)->func_decl);
+		free_func_decl(n);
 		break;
 	case CMPTN:
-		free_ast_node_list(&(*node)->computation->var_decls);
-		free_ast_node_list(&(*node)->computation->func_decls);
-		free_ast_node_list(&(*node)->computation->stmts);
-		free((*node)->computation);
+		free_computation(n);
 		break;
 	case BINOP:
-		free_ast_node(&(*node)->bin_op->opa);
-		free((*node)->bin_op->op);
-		free_ast_node(&(*node)->bin_op->opb);
-		free((*node)->bin_op);
+		free_bin_op(n);
 		break;
 	case ASSMT:
-		free_ast_node(&(*node)->assignment->lhs);
-		free_ast_node(&(*node)->assignment->rhs);
-		free((*node)->assignment);
+		free_assignment(n);
 		break;
 	case FUNCCALL:
-		free_ast_node(&(*node)->func_call->ident);
-		free_ast_node_list(&(*node)->func_call->args);
-		free((*node)->func_call);
+		free_func_call(n);
 		break;
 	case IFSTMT:
-		free_ast_node(&(*node)->if_stmt->condition);
-		free_ast_node_list(&(*node)->if_stmt->then_stmts);
-		free_ast_node_list(&(*node)->if_stmt->else_stmts);
-		free((*node)->if_stmt);
+		free_if_stmt(n);
 		break;
 	case WHSTMT:
-		free_ast_node(&(*node)->while_stmt->condition);
-		free_ast_node_list(&(*node)->while_stmt->do_stmts);
-		free((*node)->while_stmt);
+		free_while_stmt(n);
 		break;
 	case RESTMT:
-		free_ast_node(&(*node)->ret_stmt->ret_val);
-		free((*node)->ret_stmt);
+		free_return_stmt(n);
 		break;
 	default:
 		perror("(free_ast_node): Unknown ast node type");
 		exit(1);
 		break;
 	}
-	free(*node);
+	free(*n);
+	*n = NULL;
 }
 
 void
@@ -385,12 +367,15 @@ free_ast_node_list (struct AstNodeList **anl)
 		free_ast_node(&prv);
 	}
 	free(*anl);
+	*anl = NULL;
 }
 
 void
 free_ast (struct Ast **ast)
 {
-	free((*ast)->root);
+	free_ast_node(&((*ast)->root));
+	(*ast)->root = NULL;
 	agclose((*ast)->graph);
 	free((*ast));
+	*ast = NULL;
 }

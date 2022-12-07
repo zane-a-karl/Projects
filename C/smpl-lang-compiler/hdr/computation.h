@@ -34,4 +34,7 @@ struct Operand *
 compile_computation (struct AstNode *n,
 										 struct CompilerCtx *cctx);
 
+void
+free_computation (struct AstNode **n);
+
 #endif//_COMPUTATION_H_

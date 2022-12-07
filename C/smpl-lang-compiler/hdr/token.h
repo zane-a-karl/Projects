@@ -86,7 +86,13 @@ void
 print_token_list (struct TokenList *tl);
 
 void
-free_token_list (struct TokenList *tl);
+free_token (struct Token **t);
+
+void
+free_token_node (struct TokenNode **tn);
+
+void
+free_token_list (struct TokenList **tl);
 
 struct Token *
 new_alnum_token (char *buf,

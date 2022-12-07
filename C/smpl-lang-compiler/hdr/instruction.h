@@ -8,6 +8,7 @@
 
 #include <stdarg.h>
 #include <string.h>
+#include <stdbool.h>
 
 struct Instruction {
 	char               *name;

@@ -115,7 +115,7 @@ interpret_func_call (struct AstNode *n,
 
 	//Set up interpreter context for function body
 	struct InterpreterCtx *fnctx = new_interpreter_ctx();
-	deep_copy_sht_entries(ictx->funcs, fnctx->funcs);
+	fnctx->funcs = deep_copy_sht(ictx->funcs);
 	for (i = fn_node->func_decl->body->local_vars->head; i != NULL; i = i->next) {
 		rv = interpret_ast_node(i, fnctx);
 	}
@@ -134,10 +134,10 @@ interpret_func_call (struct AstNode *n,
 															param_name);
 		}
 		//Treat it like a var decl, and give it 1 int of space
-		tmp = new_str_hash_entry(deep_copy_str(param_name));
-		sht_insert(fnctx->locals, tmp);
+		tmp = new_str_hash_entry(deep_copy_str(param_name), DATA);
 		tmp->data = calloc(1, sizeof(int));
 		tmp->data[0] = args[k];
+		sht_insert(fnctx->locals, tmp);
 	}
 
 	//Interpret the func_body stmts and return early if required
@@ -159,14 +159,22 @@ compile_func_call (struct AstNode *n,
 	struct OperandList *arg_ops = new_operand_list();
 	struct Operand *fn_op, *rv_op;
 	struct AstNode *i = n->func_call->args->head;
-	int n_args = 0;
+	int n_fn_args = 0;
 	for (; i != NULL; i = i->next) {
 		push_operand(arg_ops, compile_ast_node(i, cctx));
-		++n_args;
+		++n_fn_args;
 	}
 	fn_op = new_operand(FN, n->func_call->ident->identifier->name);
 	rv_op = compiler_ctx_emit(cctx, false, false, 4,
-														"emit", false, fn_op, arg_ops);
+														"call", n_fn_args, fn_op, arg_ops);
 
 	return rv_op;
+}
+
+void
+free_func_call (struct AstNode **n)
+{
+	free_ast_node(&((*n)->func_call->ident));
+	free_ast_node_list(&((*n)->func_call->args));
+	free((*n)->func_call);
 }

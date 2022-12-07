@@ -33,4 +33,7 @@ struct Operand *
 compile_addr (struct AstNode     *n,
 							struct CompilerCtx *cctx);
 
+void
+free_arr_acc (struct AstNode **n);
+
 #endif//_ARRAY_ACCESS_H_

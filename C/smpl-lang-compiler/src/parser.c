@@ -152,9 +152,11 @@ smpl_computation (struct Parser *p,
 	// c->vdl, c->fdl calloc'd here
 	node->computation = new_computation();
 	consume_tkn(MAIN, p, COMPUTATION);
+	struct AstNodeList *var_decl;
 	while ( peek_tkn(VAR, p) ||	peek_tkn(ARRAY, p) ) {
-		concat_ast_list(node->computation->var_decls,
-										smpl_var_decl(p, g));
+
+		var_decl = smpl_var_decl(p, g);
+		concat_ast_list(node->computation->var_decls, &var_decl);
 	}
 	while ( peek_tkn(FUNCTION, p) || peek_tkn(VOID, p) ) {
 		push_ast_node(node->computation->func_decls,
@@ -187,8 +189,8 @@ smpl_var_decl (struct Parser *p,
 		push_ast_node(nodes, i);
 		i->var_decl = new_vd();
 		i->var_decl->ident = smpl_ident(p, g, VAR_DECL);
-		// TRYING SHALLOW COPY INSTEAD OF DEEP COPY OF DIMS
-		i->var_decl->dims = nodes->head->var_decl->dims;
+		i->var_decl->dims =
+			deep_copy_ast_node_list(nodes->head->var_decl->dims);
 	}
 	consume_tkn(SEMICOLON, p, VAR_DECL);
 
@@ -317,8 +319,11 @@ smpl_func_body (struct Parser *p,
 {
 	// fb->local_vars calloc'd here
 	struct FuncBody *fb = new_func_body();
+	struct AstNodeList *var_decl;
 	while ( peek_tkn(VAR, p) || peek_tkn(ARRAY, p) ) {
-		concat_ast_list(fb->local_vars, smpl_var_decl(p, g));
+
+		var_decl = smpl_var_decl(p, g);
+		concat_ast_list(fb->local_vars, &var_decl);
 	}
 	consume_tkn(LBRACE, p, FUNC_BODY);
 	fb->stmts = smpl_stat_sequence(p, g);
@@ -595,22 +600,3 @@ smpl_return_statement (struct Parser *p,
 
 	return node;
 }
-
-/* int */
-/* val (char *c) { */
-
-/* 	int rv; */
-/* 	sscanf(c, "%d", &rv); */
-/* 	return rv; */
-/* } */
-
-/* int */
-/* lookup (VAR vt[MAX_NUM_VARS], */
-/* 				char *name) { */
-/* 	for (int i = 0; i < MAX_NUM_VARS; ++i) { */
-/* 		if (strncmp(vt[i].name, name, MAX_NAME_LEN) == 0) { */
-/* 			return vt[i].addr; */
-/* 		} */
-/* 	} */
-/* 	return -1; */
-/* } */

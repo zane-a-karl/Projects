@@ -3,6 +3,7 @@
 
 #include "../hdr/constants.h"
 #include "../hdr/utils.h"
+#include "../hdr/operand.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,7 +34,8 @@ struct StrHashTable *
 new_str_hash_table ();
 
 struct StrHashEntry *
-new_str_hash_entry (char *name);
+new_str_hash_entry (char *name,
+										enum StrHashEntryType type);
 
 unsigned int
 sht_hash (char *name);
@@ -50,9 +52,8 @@ struct StrHashEntry *
 sht_delete (struct StrHashTable *sht,
 						char                *name);
 
-void
-deep_copy_sht_entries (struct StrHashTable *src,
-											 struct StrHashTable *dst);
+struct StrHashTable *
+deep_copy_sht (struct StrHashTable *src);
 
 void
 free_she (struct StrHashEntry **she);

@@ -8,6 +8,7 @@ new_operand (enum OperandType type,
 	op->next           = NULL;
 	va_list args;
 	va_start(args, type);
+	op->type = type;
 	switch ( type ) {
 	case IMMEDIATE:
 	case INSTRUCTION:
@@ -70,8 +71,8 @@ push_operand (struct OperandList *ol,
 
 struct Operand *
 deep_copy_operand (struct Operand *src)
-	{
-		struct Operand *dst;
+{
+	struct Operand *dst;
 	switch ( src->type ) {
 	case IMMEDIATE:
 	case INSTRUCTION:
@@ -162,15 +163,19 @@ free_operand (struct Operand **op)
 	case LABEL:
 	case FN:
 		free((*op)->name);
+		(*op)->name = NULL;
 		break;
 	case POSSPHI:
 		free_operand(&((*op)->op));
+		(*op)->op = NULL;
 		break;
 	default:
 		perror("(new_operand): Unknown operand type");
 		exit(1);
 		break;
 	}
+	free(*op);
+	*op = NULL;
 }
 
 void
@@ -184,4 +189,5 @@ free_operand_list (struct OperandList **ol)
 		free_operand(&prv);
 	}
 	free(*ol);
+	*ol = NULL;
 }

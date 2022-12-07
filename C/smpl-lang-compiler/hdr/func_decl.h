@@ -47,4 +47,7 @@ struct Operand *
 compile_func_decl (struct AstNode *n,
 									 struct CompilerCtx *cctx);
 
+void
+free_func_decl (struct AstNode **n);
+
 #endif//_FUNC_DECL_H_

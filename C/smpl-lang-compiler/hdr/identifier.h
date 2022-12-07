@@ -38,4 +38,7 @@ struct Operand *
 compile_identifier (struct AstNode *n,
 										struct CompilerCtx *cctx);
 
+void
+free_identifier (struct AstNode **n);
+
 #endif//_IDENTIFIER_H_

@@ -21,4 +21,6 @@ struct StrList;
 struct StrEntry;
 struct StrHashTable;
 
+struct InterpreterCtx;
+
 #endif//_FORWARD_DECLARATIONS_H

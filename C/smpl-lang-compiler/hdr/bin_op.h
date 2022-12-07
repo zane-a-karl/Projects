@@ -34,4 +34,7 @@ compile_conditional_jump (struct AstNode     *n,
 													struct CompilerCtx *cctx,
 													struct BasicBlock  *bb);
 
+void
+free_bin_op (struct AstNode **n);
+
 #endif//_BIN_OP_H_

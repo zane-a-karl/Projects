@@ -150,3 +150,11 @@ compile_addr (struct AstNode *n,
 
 	return addr_op;
 }
+
+void
+free_arr_acc (struct AstNode **n)
+{
+	free_ast_node(&((*n)->arr_acc->ident));
+	free_ast_node_list(&((*n)->arr_acc->indices));
+	free((*n)->arr_acc);
+}

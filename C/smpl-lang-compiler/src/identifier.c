@@ -56,3 +56,10 @@ compile_identifier (struct AstNode *n,
 
 	return ident_box.op;
 }
+
+void
+free_identifier (struct AstNode **n)
+{
+	free((*n)->identifier->name);
+	free((*n)->identifier);
+}

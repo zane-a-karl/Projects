@@ -123,3 +123,11 @@ compile_assignment (struct AstNode *n,
 	}
 	return NULL;
 }
+
+void
+free_assignment (struct AstNode **n)
+{
+	free_ast_node(&((*n)->assignment->lhs));
+	free_ast_node(&((*n)->assignment->rhs));
+	free((*n)->assignment);
+}

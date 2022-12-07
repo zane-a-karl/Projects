@@ -118,9 +118,7 @@ compile_if_stmt (struct AstNode *n,
 
 	cctx->cur_block = join_block;
 	struct OpBox a, b;
-	struct Operand *phi_op;
-	struct Operand *then_op = new_operand(LABEL);
-	struct Operand *else_op = new_operand(LABEL);
+	struct Operand *phi_op, *then_op, *else_op;
 	struct StrHashEntry *j;
 	for (int k = 0; k < MAX_NUM_VARS; ++k) {
 		j = cctx->cur_block->locals_op->entries[k];
@@ -140,4 +138,13 @@ compile_if_stmt (struct AstNode *n,
 		}
 	}
 	return NULL;
+}
+
+void
+free_if_stmt (struct AstNode **n)
+{
+	free_ast_node(&((*n)->if_stmt->condition));
+	free_ast_node_list(&((*n)->if_stmt->then_stmts));
+	free_ast_node_list(&((*n)->if_stmt->else_stmts));
+	free((*n)->if_stmt);
 }

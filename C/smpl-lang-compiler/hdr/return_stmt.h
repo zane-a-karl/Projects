@@ -27,4 +27,7 @@ struct Operand *
 compile_return_stmt (struct AstNode *n,
 										 struct CompilerCtx *cctx);
 
+void
+free_return_stmt (struct AstNode **n);
+
 #endif//_RETURN_STMT_H_

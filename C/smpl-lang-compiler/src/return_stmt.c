@@ -52,3 +52,10 @@ compile_return_stmt (struct AstNode *n,
 
 	return rv_op;
 }
+
+void
+free_return_stmt (struct AstNode **n)
+{
+	free_ast_node(&((*n)->ret_stmt->ret_val));
+	free((*n)->ret_stmt);
+}

@@ -28,4 +28,7 @@ struct Operand *
 compile_while_stmt (struct AstNode *n,
 										struct CompilerCtx *cctx);
 
+void
+free_while_stmt (struct AstNode **n);
+
 #endif//_WHILE_STMT_H_

@@ -14,15 +14,16 @@ new_str_hash_table ()
 
 // Assume `name` is already calloc'd
 struct StrHashEntry *
-new_str_hash_entry (char *name)
+new_str_hash_entry (char *name,
+										enum StrHashEntryType type)
 {
 	struct StrHashEntry *she;
-	she = calloc(1, sizeof(struct StrHashEntry));
-	she->name            = name;
-	she->type            = DATA;
-	she->data            = NULL;
-	she->data_len        = 0;
-	she->next            = NULL;
+	she           = calloc(1, sizeof(struct StrHashEntry));
+	she->name     = name;
+	she->type     = type;
+	she->data     = NULL;
+	she->data_len = 0;
+	she->next     = NULL;
 
 	return she;
 }
@@ -88,30 +89,45 @@ sht_delete (struct StrHashTable *sht,
 	return i;
 }
 
-// Assume `dst` is already calloc'd
-void
-deep_copy_sht_entries (struct StrHashTable *src,
-											 struct StrHashTable *dst)
+struct StrHashTable *
+deep_copy_sht (struct StrHashTable *src)
 {
+	struct StrHashTable *dst = new_str_hash_table();
 	int i, k;
 	struct StrHashEntry *j, *tmp;
 	for (i = 0; i < MAX_NUM_VARS; ++i) {
 		for (j = src->entries[i]; j != NULL; j = j->next) {
-			tmp = new_str_hash_entry(deep_copy_str(j->name));
-			sht_insert(dst, tmp);
-			if (j->type == NODE) {
-				tmp->node = j->node;
-			} else if (j->type == DATA) {
+			tmp = new_str_hash_entry(deep_copy_str(j->name), j->type);
+			switch (j->type) {
+			case DATA:
 				tmp->data = calloc(j->data_len, sizeof(int));
 				for (k = 0; i < j->data_len; ++k) {
 					tmp->data[k] = j->data[k];
 				}
-			} else {
-				perror("Unrecognized she type");
+				break;
+			case NODE:
+				tmp->node = j->node;//shallow copy don't free!
+				break;
+			case OP:
+				//tmp->operand = j->operand;
+				tmp->operand = deep_copy_operand(j->operand);
+				break;
+			case INST:
+				tmp->instruction = j->instruction;//shallow don't free!
+				break;
+			case BB:
+				tmp->basic_block = j->basic_block;//shallow don't free!
+				break;
+			default:
+				perror("(deep_copy_sht) Unrecognized she type");
 				exit(1);
-			}
-		}
-	}
+				break;
+			}//switch
+
+			sht_insert(dst, tmp);
+		}//jfor
+	}//ifor
+	return dst;
 }
 
 // Remember if you used string literals then DO NOT free!
@@ -119,39 +135,43 @@ void
 free_she (struct StrHashEntry **she)
 {
 	free((*she)->name);
+	(*she)->name = NULL;
 	switch ( (*she)->type ) {
 	case DATA:
 		free((*she)->data);
+		(*she)->data = NULL;
 		break;
 	case NODE:
 		//Don't free the node as it will be freed elsewhere
 		break;
 	case OP:
-		//Not sure if you need to free this or if it's freed elsewhere
+		//Don't free the op as it will be freed elsewhere
 		break;
 	case INST:
-		//Not sure if you need to free this or if it's freed elsewhere
+		//Don't free the instr as it will be freed elsewhere
 		break;
 	case BB:
-		//Not sure if you need to free this or if it's freed elsewhere
+		//Don't free the bb as it will be freed elsewhere
 		break;		
 	}
 	free(*she);
+	*she = NULL;
 }
 
 void
 free_sht (struct StrHashTable **sht)
 {
 	for (int i = 0; i < MAX_NUM_VARS; ++i) {
-		struct StrHashEntry *tmp = (*sht)->entries[i];
+		struct StrHashEntry *cur = (*sht)->entries[i];
 		struct StrHashEntry *prv = NULL;
-			while ( tmp != NULL ) {
-				prv = tmp->next;
-				free_she(&tmp);
-				tmp = prv;
+			while ( cur != NULL ) {
+				prv = cur;
+				cur = cur->next;
+				free_she(&prv);
 			}
 	}
 	free(*sht);
+	*sht = NULL;
 }
 
 void

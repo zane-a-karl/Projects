@@ -36,4 +36,7 @@ struct Operand *
 compile_func_call (struct AstNode *n,
 									 struct CompilerCtx *cctx);
 
+void
+free_func_call (struct AstNode **n);
+
 #endif//_FUNC_CALL_H_

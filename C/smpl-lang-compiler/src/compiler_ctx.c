@@ -5,7 +5,7 @@ new_compiler_ctx (bool cse_bool)
 {
 	struct CompilerCtx *cc;
 	cc            = calloc(1, sizeof(struct CompilerCtx));
-	cc->instr_ctr = 0;
+	cc->instr_ctr = 1; // to be like andre for now
 	cc->block_ctr = 0;
 	cc->cur_block = NULL;
 	cc->roots     = new_basic_block_list();
@@ -29,7 +29,7 @@ compiler_ctx_emit (struct CompilerCtx *cctx,
 	va_start(args, n_args);
 	instr_name = va_arg(args, char *);//First arg is always the name
 	result_op = vbasic_block_emit(cctx->cur_block, cctx->instr_ctr,
-																instr_name, po, me, n_args,
+																instr_name, po, me, n_args-1,
 																args);
 	va_end(args);
 	cctx->instr_ctr++;

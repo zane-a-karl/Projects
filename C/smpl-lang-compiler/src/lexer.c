@@ -24,9 +24,9 @@ void
 free_lexer (struct Lexer **lxr)
 {
 	fclose((*lxr)->fin);
-	free_token_list((*lxr)->tl);
-	free((*lxr)->tl);
+	free_token_list(&((*lxr)->tl));
 	free((*lxr));
+	*lxr = NULL;
 }
 
 /**

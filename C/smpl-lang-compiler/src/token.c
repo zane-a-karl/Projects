@@ -135,15 +135,33 @@ print_token_list (struct TokenList *tl)
 }
 
 void
-free_token_list (struct TokenList *tl)
+free_token (struct Token **t)
 {
-	struct TokenNode *cur = tl->head;
+	free((*t)->raw);
+	free(*t);
+	*t = NULL;
+}
+
+void
+free_token_node (struct TokenNode **tn)
+{
+	free_token(&((*tn)->tkn));
+	free(*tn);
+	*tn = NULL;
+}
+
+void
+free_token_list (struct TokenList **tl)
+{
+	struct TokenNode *cur = (*tl)->head;
 	struct TokenNode *prv;
   while ( cur != NULL ) {
 		prv = cur;
-		cur=cur->next;
-		free(prv);
+		cur = cur->next;
+		free_token_node(&prv);
 	}
+	free(*tl);
+	*tl = NULL;
 }
 
 struct Token *

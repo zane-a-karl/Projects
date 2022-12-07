@@ -29,4 +29,7 @@ struct Operand *
 compile_if_stmt (struct AstNode *n,
 								 struct CompilerCtx *cctx);
 
+void
+free_if_stmt (struct AstNode **n);
+
 #endif//_IF_STMT_H_

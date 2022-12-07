@@ -1,5 +1,6 @@
 main
 var a, b;
+array[3] c;
 {
 	let a <- 1;
 	let b <- 2;
@@ -9,18 +10,6 @@ var a, b;
 		let a <- 3;
 	else
 		let b <- 4;
-	fi;
-
-	if a < b
-	then
-		let a <- 5;
-	else
-		let b <- 1;
-	fi;
-
-	if a < b
-	then
-		let a <- 0;
 	fi;
 
 	call outputNum(a);

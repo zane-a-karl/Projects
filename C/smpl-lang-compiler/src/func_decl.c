@@ -86,11 +86,9 @@ interpret_func_decl (struct AstNode *n,
 		throw_interpreter_error("Re-declaration of func: ", name);
 	}
 	//If new, add it to hash map
-	struct StrHashEntry *fn = new_str_hash_entry(name);
-	sht_insert(ictx->funcs, fn);
-	fn->type = NODE;
-	//ictx->funcs->entries[sht_hash(name)]->node = n;
+	struct StrHashEntry *fn = new_str_hash_entry(name, NODE);
 	fn->node = n;
+	sht_insert(ictx->funcs, fn);
 
 	return 0x7FFFFFFF;//a.k.a. NULL
 }
@@ -108,7 +106,7 @@ compile_func_decl (struct AstNode *n,
 	fn->entry   = fn_root_block;
 	struct AstNode *i = n->func_decl->param_idents->head;
 	for (; i != NULL; i = i->next) {
-		push_str_node(fn->arg_names, i->identifier->name);
+		push_str_node(fn->arg_names, new_str_node(i->identifier->name));
 	}
 	fn_root_block->function = fn;
 	cctx->cur_block         = fn_root_block;
@@ -118,7 +116,7 @@ compile_func_decl (struct AstNode *n,
 	i = n->func_decl->param_idents->head;
 	for (; i != NULL; i = i->next) {
 		
-		declare_local(cctx->cur_block, i->identifier->name, NULL);
+		declare_local(cctx->cur_block, i->identifier->name, NULL, 0, 0);
 		set_local_op(cctx->cur_block, i->identifier->name,
 								 new_operand(ARGUMENT, i->identifier->name));
 	}
@@ -138,4 +136,15 @@ compile_func_decl (struct AstNode *n,
 	cctx->cur_block = old_root;
 
 	return NULL;
+}
+
+void
+free_func_decl (struct AstNode **n)
+{
+	free_ast_node(&((*n)->func_decl->fn_ident));
+	free_ast_node_list(&((*n)->func_decl->param_idents));
+	free_ast_node_list(&((*n)->func_decl->body->local_vars));
+	free_ast_node_list(&((*n)->func_decl->body->stmts));
+	free((*n)->func_decl->body);
+	free((*n)->func_decl);
 }

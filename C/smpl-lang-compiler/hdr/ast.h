@@ -91,7 +91,7 @@ push_ast_node (struct AstNodeList *anl,
 
 void
 concat_ast_list (struct AstNodeList *anl,
-								 struct AstNodeList *new);
+								 struct AstNodeList **new);
 
 void
 create_agedge_set (struct AstNode *n);

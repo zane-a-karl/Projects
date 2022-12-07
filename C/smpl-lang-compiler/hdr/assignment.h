@@ -28,4 +28,7 @@ struct Operand *
 compile_assignment (struct AstNode *n,
 										struct CompilerCtx *cctx);
 
+void
+free_assignment (struct AstNode **n);
+
 #endif//_ASSIGNMENT_H_

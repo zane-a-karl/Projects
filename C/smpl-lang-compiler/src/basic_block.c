@@ -14,13 +14,14 @@ new_basic_block (struct CompilerCtx *cctx)
 	bb->next_s            = NULL;
 	bb->predecessors      = new_basic_block_list();
 	bb->next_p            = NULL;
-	bb->locals_op         = NULL;
-	bb->locals_dim        = NULL;
+	bb->locals_op         = new_str_hash_table();
+	bb->locals_dim        = new_str_hash_table();
 	bb->function          = NULL;
 	bb->dominatees        = new_basic_block_list();
 	bb->next_d            = NULL;
-	bb->dom_instr_tree    = NULL;
+	bb->dom_instr_tree    = new_str_hash_table();
 	bb->next_r            = NULL;
+	bb->shallow_copy      = false;
 
 	return bb;
 }
@@ -46,6 +47,21 @@ new_block_group (char *name)
 	bg->is_main           = false;
 
 	return bg;
+}
+
+/** Semi-deep-copy because entry and exit point to the same
+		data as the src's
+ */
+struct BlockGroup *
+deep_copy_block_group (struct BlockGroup *src)
+{
+	struct BlockGroup *dst = new_block_group(src->name);
+	dst->entry = src->entry;
+	dst->exit = src->exit;
+	dst->arg_names         = deep_copy_str_list(src->arg_names);
+	dst->is_main           = src->is_main;
+
+	return dst;
 }
 
 /* assume `new_bb` already calloc'd
@@ -164,16 +180,21 @@ vbasic_block_emit (struct BasicBlock *bb,
 	dom_class_entry = sht_lookup(bb->dom_instr_tree, dom_class_name);
 	if ( dom_class_entry != NULL ) {
 		instr->dominator = dom_class_entry->instruction;
+	} else {
+		dom_class_entry =
+			new_str_hash_entry(deep_copy_str(dom_class_name), INST);
 	}
 
 	//Find bb's instrs length and bb's latest_instr
 	int instrs_len = 0;
 	struct Instruction *latest_i;
 	latest_i = bb->instrs->head;
-	for (; latest_i->next != NULL; latest_i = latest_i->next) {
-		++instrs_len;
+	if ( latest_i != NULL ) {
+		for (; latest_i->next != NULL; latest_i = latest_i->next) {
+			++instrs_len;
+		}
+		++instrs_len;//b/c you miss the latest_i by stopping early.
 	}
-	++instrs_len;//b/c you miss the latest_i by stopping early.
 
 	struct Instruction *identical;
 	if ( exec_cse == true ) {
@@ -213,7 +234,8 @@ vbasic_block_emit (struct BasicBlock *bb,
 	}//exec_cse
 	instr->number = instr_num;
 	push_instruction(bb->instrs, instr);
-	dom_class_entry->instruction = instr;
+	dom_class_entry->instruction = instr;//Shallow copy DON'T FREE!
+	sht_insert(bb->dom_instr_tree, dom_class_entry);
 
 	return new_operand(INSTRUCTION, instr->number);
 }
@@ -229,20 +251,30 @@ add_successor (struct BasicBlock *bb,
 /**
  * Declare a local var form this block and set it to an uninitialied
  * value.
- * Assume `dims` has already been calloc'd
+ * Assume `dims` has already been calloc'd but NOT `name`
  */
 void
 declare_local (struct BasicBlock *bb,
 							 char              *name,
-							 int               *dims)
+							 int               *dims,
+							 int                dims_len,
+							 int                alloc_size)
 {
-	struct StrHashEntry *var = sht_lookup(bb->locals_op, name);
-	if ( var == NULL ) {
+	struct StrHashEntry *var_ent  = sht_lookup(bb->locals_op , name);
+	struct StrHashEntry *dims_ent = sht_lookup(bb->locals_dim, name);
+	if ( var_ent != NULL || dims_ent != NULL ) {
 		throw_compiler_error("Redclaration of local var: ", name);
 	}
-	var->data[0] = 0x7FFFFFFF;//My `None` value
-	struct StrHashEntry *dimensions = sht_lookup(bb->locals_dim, name);
-	dimensions->data = dims;
+
+	var_ent           = new_str_hash_entry(deep_copy_str(name), DATA);
+	var_ent->data_len = alloc_size;
+	sht_insert(bb->locals_op, var_ent);
+
+	dims_ent = new_str_hash_entry(deep_copy_str(name), DATA);
+	dims_ent->data_len = dims_len;
+	dims_ent->data     = dims;
+	sht_insert(bb->locals_dim, dims_ent);
+	//andre doesn't insert data but just inserts 'None' should you?
 }
 
 struct OpBox
@@ -261,18 +293,25 @@ get_local (struct BasicBlock *bb,
 	return new_op_box(var_op, dims->data);
 }
 
+/**
+ *Assume `op` is already calloc'd
+ */
 void
 set_local_op (struct BasicBlock *bb,
 							char              *name,
 							struct Operand    *op)
 {
-	struct StrHashEntry *local = sht_lookup(bb->locals_op, name);
-	if ( local == NULL ) {
+	struct StrHashEntry *local_entry = sht_lookup(bb->locals_op, name);
+	if ( local_entry == NULL ) {
 		throw_compiler_error("Access to undeclared local: ", name);
 	}
-	local->operand = op;
+	local_entry->type = OP;
+	local_entry->operand = op;
+	// Andre inserts the op data here should you too? I don't think so
 }
 
+/** Both `old` and `new` are already calloc'd
+ */
 void
 rename_op (struct BasicBlock   *bb,
 					 struct Operand      *old_op,
@@ -283,26 +322,42 @@ rename_op (struct BasicBlock   *bb,
 		visited = new_str_hash_table();
 	}
 	if ( sht_lookup(visited, bb->label) != NULL ) {
-		free_sht(&visited);
+		free_sht(&visited); // Doesn't free bb
 		return;
 	}
 
-	struct OperandList *new_ops;
+	struct StrHashEntry *bb_entry;
+	bb_entry = new_str_hash_entry(bb->label, BB);
+	sht_insert(visited, bb_entry);
+	bb_entry->basic_block = bb;
+
 	struct Instruction *i;
 	struct Operand *j;
 	for (i = bb->instrs->head; i != NULL; i = i->next) {
-		new_ops = new_operand_list();
 		for (j = i->ops->head; j != NULL; j = j->next) {
 			if ( eq_operands(j, old_op) ) {
-				push_operand(new_ops, new_op);
+				j->type = new_op->type;
+				switch ( new_op->type ) {
+				case IMMEDIATE:
+				case INSTRUCTION:
+					j->number = new_op->number;
+					break;
+				case UNINITVAR:
+				case ARGUMENT:
+				case LABEL:
+				case FN:
+					j->name   = new_op->name;
+					break;
+				case POSSPHI:
+					j->op     = new_op->op;
+					break;
+				default:
+					perror("(rename_op): Unknown operand type");
+					exit(1);
+					break;
+				}
 			}//if
 		}//jfor
-		free_operand_list(&(i->ops));
-		//Can I do this or do I have to do what I wrote below?
-		i->ops = new_ops;
-		/* i->ops = NULL; */
-	  /* deep_copy_operand_list(i->ops, new_ops); */
-		/* free_operand_list(&(new_ops)); */
 	}//ifor
 
 	struct BasicBlock *succ = bb->successors->head;
@@ -315,12 +370,14 @@ void
 copy_block_ctx_params (struct BasicBlock *dst,
 											 struct BasicBlock *src)
 {
-	//Should I deep copy all of these?!?!
-	//I think I should if I want to free things at the end :/
-	dst->locals_op      = src->locals_op;
-	dst->locals_dim     = src->locals_dim;
-	dst->dom_instr_tree = src->dom_instr_tree;
-	dst->function       = src->function;
+	// This is a deep copy of the sht struct but a shallow
+	// copy of the data within. I.e. dst will have its own
+	// mem for its own tables, but the content of the tables
+	// will be the same pointers as src's.
+	dst->locals_op      = deep_copy_sht(src->locals_op);
+	dst->locals_dim     = deep_copy_sht(src->locals_dim);
+	dst->dom_instr_tree = deep_copy_sht(src->dom_instr_tree);
+	dst->function       = deep_copy_block_group(src->function);
 }
 
 void
@@ -339,18 +396,34 @@ free_basic_block (struct BasicBlock **bb)
 	free_instruction_list(&(*bb)->instrs);
 	//Don't free `lastest_instr` it was freed in line above.
 	free((*bb)->label);
-	//Don't free `successors` it was freed elsewhere
+	(*bb)->label = NULL;
+
+	free((*bb)->successors);//Just the pointer not the whole list
+	(*bb)->successors = NULL;
 	//Don't free `next_s` it was never calloc'd
+
 	free((*bb)->predecessors);//Just the pointer not the whole list
+	(*bb)->predecessors = NULL;
 	//Don't free `next_p` it was never calloc'd
-	free_sht(&(*bb)->locals_op);
-	free_sht(&(*bb)->locals_dim);
-	free_block_group(&(*bb)->function);
-	free((*bb)->dominatees);//Just the pointer not the whole list
+
+	// If's and While's will have the same hash tables and bg!
+	if ( !(*bb)->shallow_copy ) {
+		free_sht(&((*bb)->locals_op));
+		free_sht(&((*bb)->locals_dim));
+		free_block_group(&((*bb)->function));
+	}
+
+	//Don't free `dominatees` it was freed elsewhere
+	/* free((*bb)->dominatees);//Just the pointer not the whole list */
+	/* (*bb)->dominatees = NULL; */
 	//Don't free `next_d` it was never calloc'd
-	free_sht(&(*bb)->dom_instr_tree);
+
+	if ( !(*bb)->shallow_copy ) {
+		free_sht(&((*bb)->dom_instr_tree));
+	}
 	//Don't free `next_r` it was never calloc'd
 	free(*bb);
+	*bb = NULL;
 }
 
 /**
@@ -369,6 +442,24 @@ free_successors_basic_block_list (struct BasicBlockList **successors)
 		free_basic_block(&prv);
 	}
 	free(*successors);
+	*successors = NULL;
+}
+
+void
+free_dominatees_basic_block_list (struct BasicBlockList **dominatees)
+{
+	struct BasicBlock *cur = (*dominatees)->head;
+	if (cur != NULL) {	
+		free_dominatees_basic_block_list( &(cur->dominatees) );
+	}
+	struct BasicBlock *prv;
+  while ( cur != NULL ) {
+		prv = cur;
+		cur = cur->next_d;
+		free_basic_block(&prv);
+	}
+	free(*dominatees);
+	*dominatees = NULL;
 }
 
 void
@@ -379,8 +470,10 @@ free_roots_basic_block_list (struct BasicBlockList **roots)
   while ( cur != NULL ) {
 		prv = cur;
 		cur = cur->next_r;
-		free_successors_basic_block_list(&(prv->successors));
+		//		free_successors_basic_block_list(&(prv->successors));
+		free_dominatees_basic_block_list( &(prv->dominatees) );
 		free_basic_block(&prv);
 	}
 	free(*roots);
+	*roots = NULL;
 }

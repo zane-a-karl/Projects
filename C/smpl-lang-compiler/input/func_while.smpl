@@ -1,23 +1,23 @@
 main
-var input;
+var input, r;
 
-function isEven(n)
-let v, result;
+function isEven(n);
+var v, result;
 {
     let v <- n;
     while v >= 2 do
-        v <- v - 2;
+        let v <- v - 2;
     od;
 
     if v == 2 then
         return 1;
     else
         return 0;
-}
+	  fi;
+};
 
 {
-    let input <- call InputNum();
+    let input <- call inputNum();
     let r <- call isEven(input);
-    call OutputNum(r);
-}
-.
+    call outputNum(r);
+}.

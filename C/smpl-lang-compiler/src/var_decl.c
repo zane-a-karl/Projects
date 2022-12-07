@@ -53,36 +53,36 @@ interpret_var_decl (struct AstNode *n,
 		throw_interpreter_error("Re-declaration of var: ", name);
 	}
 	//If new, add it to hash map
-	struct StrHashEntry *var = new_str_hash_entry(name);
-	sht_insert(ictx->locals, var);
+	struct StrHashEntry *var_ent = new_str_hash_entry(name, DATA);
+	sht_insert(ictx->locals, var_ent);
 	//Give it a base of 1 int of space
 	data_len = 1;
-	var->data = calloc(data_len, sizeof(int));
-	var->data_len = data_len;
+	var_ent->data = calloc(data_len, sizeof(int));
+	var_ent->data_len = data_len;
 	//If it's an arr give it 1 int of space to save the arr dims
-	struct StrHashEntry *arrdims;
+	struct StrHashEntry *arrdims_ent;
 	if ( n->var_decl->dims->head != NULL ) {
-		arrdims = new_str_hash_entry(deep_copy_str(name));
-		sht_insert(ictx->arrdims, arrdims);
+		arrdims_ent = new_str_hash_entry(deep_copy_str(name), DATA);
+		sht_insert(ictx->arrdims, arrdims_ent);
 		arrdims_len = 1;
-		arrdims->data = calloc(arrdims_len, sizeof(int));
+		arrdims_ent->data = calloc(arrdims_len, sizeof(int));
 	}
 	//If it's an arr give it the requisite space
 	for (i = n->var_decl->dims->head; i != NULL; i = i->next) {
 
 		dim = interpret_ast_node(i, ictx);
 		data_len *= dim;
-		var->data = realloc(var->data, data_len * sizeof(int));
-		var->data_len = data_len;
+		var_ent->data = realloc(var_ent->data, data_len * sizeof(int));
+		var_ent->data_len = data_len;
 		if ( i->next != NULL ) {
-			arrdims->data = realloc(arrdims->data,
-															(++arrdims_len) * sizeof(int));
+			arrdims_ent->data = realloc(arrdims_ent->data,
+																	(++arrdims_len) * sizeof(int));
 		}
-		arrdims->data[j++] = dim;
+		arrdims_ent->data[j++] = dim;
 	}
-	//Initialize the var to 0x7FFFFFFF=NULL
+	//Initialize the var_ent->data to 0x7FFFFFFF=NULL
 	for (j = 0; j < data_len; ++j) {
-		var->data[j] = 0x7FFFFFFF;//a.k.a. NULL
+		var_ent->data[j] = 0x7FFFFFFF;//a.k.a. NULL
 	}
 	//Use MAX of 'int' for NULL
 	return 0x7FFFFFFF;
@@ -92,9 +92,9 @@ struct Operand *
 compile_var_decl (struct AstNode *n,
 									struct CompilerCtx *cctx)
 {
-	char *name = deep_copy_str(n->var_decl->ident->identifier->name);
+	char *name = n->var_decl->ident->identifier->name;
 	int dims_len = 0;
-	int allocation_size = 1;
+	int alloc_size = 4;//4 bytes to an int
 
 	//Get the number of dimsensions
 	struct AstNode *i = n->var_decl->dims->head;
@@ -107,11 +107,11 @@ compile_var_decl (struct AstNode *n,
 	i = n->var_decl->dims->head;
 	for (int j = 0; i != NULL && j < dims_len; i = i->next, ++j) {
 		dims[j] = i->number->val;
-		allocation_size *= dims[j];
+		alloc_size *= dims[j];
 	}
 
 	//Create a BB instruction to declare the var
-	declare_local(cctx->cur_block, name, dims);
+	declare_local(cctx->cur_block, name, dims, dims_len, alloc_size);
 
 	//Create a BB 'alloca' instruction to give the arr more space
 	struct Operand *base_addr;
@@ -119,8 +119,16 @@ compile_var_decl (struct AstNode *n,
 		base_addr =
 			compiler_ctx_emit(cctx, true, false, 2,
 												"alloca", new_operand(IMMEDIATE,
-																							allocation_size));
+																							alloc_size));
 		set_local_op(cctx->cur_block, name, base_addr);
 	}
 	return NULL;
+}
+
+void
+free_var_decl (struct AstNode **n)
+{
+	free_ast_node(&((*n)->var_decl->ident));
+	free_ast_node_list(&((*n)->var_decl->dims));
+	free((*n)->var_decl);
 }

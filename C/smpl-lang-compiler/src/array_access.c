@@ -112,7 +112,8 @@ compile_addr (struct AstNode *n,
 	int *dims;
 	
 	base_addr_box = get_local(cctx->cur_block, name);
-	base_addr_op  = base_addr_box.op;
+	// Need a deep copy or else you'll mix op lists :(
+	base_addr_op  = deep_copy_operand(base_addr_box.op);
 	dims          = base_addr_box.dims;
 	struct Operand *offset_op = new_operand(IMMEDIATE, 0);
 	

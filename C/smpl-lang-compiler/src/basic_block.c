@@ -180,10 +180,7 @@ vbasic_block_emit (struct BasicBlock *bb,
 	dom_class_entry = sht_lookup(bb->dom_instr_tree, dom_class_name);
 	if ( dom_class_entry != NULL ) {
 		instr->dominator = dom_class_entry->instruction;
-	} else {
-		dom_class_entry =
-			new_str_hash_entry(deep_copy_str(dom_class_name), INST);
-	}
+	} 
 
 	//Find bb's instrs length and bb's latest_instr
 	int instrs_len = 0;
@@ -206,8 +203,8 @@ vbasic_block_emit (struct BasicBlock *bb,
 		} else if ( strncmp(instr->name, "load", 5) == 0 &&
 								instrs_len > 0 &&
 								strncmp(latest_i->name, "adda", 5) == 0 &&
-								strncmp(instr->ops->head->name,
-												latest_i->name, 5) == 0
+								instr->ops->head->type == INSTRUCTION &&
+								instr->ops->head->number == latest_i->number
 								) {
 
 			struct Instruction *identical_adda;
@@ -234,8 +231,12 @@ vbasic_block_emit (struct BasicBlock *bb,
 	}//exec_cse
 	instr->number = instr_num;
 	push_instruction(bb->instrs, instr);
+	if (dom_class_entry == NULL) {
+		dom_class_entry =
+			new_str_hash_entry(deep_copy_str(dom_class_name), INST);
+		sht_insert(bb->dom_instr_tree, dom_class_entry);
+	}
 	dom_class_entry->instruction = instr;//Shallow copy DON'T FREE!
-	sht_insert(bb->dom_instr_tree, dom_class_entry);
 
 	return new_operand(INSTRUCTION, instr->number);
 }

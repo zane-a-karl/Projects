@@ -146,6 +146,9 @@ free_she (struct StrHashEntry **she)
 		break;
 	case OP:
 		//Don't free the op as it will be freed elsewhere
+		// Nope I deep copied sometimes...
+		// so free this at those time???
+		//		free_operand((*she)->operand);
 		break;
 	case INST:
 		//Don't free the instr as it will be freed elsewhere

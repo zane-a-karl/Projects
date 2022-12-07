@@ -17,13 +17,25 @@ new_instruction (char   *name,
 	i->ops                = new_operand_list();
 	if ( n_args != 3 ) {
 		for (int j = 0; j < n_args; ++j) {
-			push_operand(i->ops, va_arg(args, struct Operand *));
+			struct Operand *op = va_arg(args, struct Operand *);
+			if ( op->next == NULL) {
+				push_operand(i->ops, op);
+			} else {
+				printf("ERROR: mixing op lists!");
+				exit(1);
+			}
 		}
 	} else if ( n_args == 3 ) {
 		// This first va_arg was originally a boolean flag hence the below comment
 		// consume flag arg (bools promoted to ints)
 		int n_fn_args = va_arg(args, int);
-		push_operand(i->ops, va_arg(args, struct Operand *));
+		struct Operand *op = va_arg(args, struct Operand *);
+		if ( op->next == NULL) {
+			push_operand(i->ops, op);
+		} else {
+			printf("ERROR: mixing op lists!");
+			exit(1);
+		}
 		struct OperandList *list = va_arg(args, struct OperandList *);
 		struct Operand *k = list->head;
 		for (int j = 0; j < n_fn_args/* && k != NULL*/; ++j, k = k->next) {

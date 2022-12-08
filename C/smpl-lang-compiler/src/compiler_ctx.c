@@ -76,6 +76,34 @@ compile (struct Ast *ast,
 	return ir;
 }
 
+/* char *no_side_effect[] = {"let", "neg", "add", "sub", "mul", "div", "cmp", */
+/* 													"adda", "load", "phi"}; */
+/* const int num_nse = */
+/* 	sizeof(no_side_effect)/sizeof(char); */
+
+/* void */
+/* eliminate_dead_code (struct BasicBlock *bb) */
+/* { */
+/* 	used_set = {op.i */
+/* 		for block in self */
+/* 		for instr in block.instrs */
+/* 		for op in instr.ops */
+/* 		if isinstance(op, InstructionOp)}; */
+/* 	nse_flag = false; */
+/* 	struct BasicBlock *i; */
+/* 	for () { */
+/* 		for (i, instr in enumerate(block.instrs)) { */
+/* 			for (int j = 0; j < num_nse; ++j) { */
+/* 				if (strcmp(instr->name, no_side_effect[j]) == 0) { */
+/* 					nse_flag = true; */
+/* 				} */
+/* 			} */
+/* 			if ( nse_flag && instr.i not in used_set) b){ */
+/* 						del block.instrs[i]; */
+/* 			} */
+/* 		} */
+/* 	} */
+
 void
 create_ir_node_set (struct CompilerCtx *ir)
 {

@@ -35,9 +35,9 @@ main (int argc,
 	//GENERATE THE GRAPHVIZ OF THE IR
 	bool cse_bool = false;
 	struct CompilerCtx *ir = compile(ast, cse_bool);
-	/* FILE *fout = fopen("output/Test1.dot", "w+"); */
-	/* gen_ir_dot_graph(ir, fout); */
-	/* fclose(fout); */
+	FILE *fout = fopen("output/Test1.dot", "w+");
+	gen_ir_dot_graph(ir, fout);
+	fclose(fout);
 	
 	
 

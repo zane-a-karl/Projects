@@ -47,6 +47,17 @@ sht_insert (struct StrHashTable *sht,
 	int index = sht_hash(she->name);
 	she->next = sht->entries[index];
 	sht->entries[index] = she;
+	/* struct StrHashEntry *itr = sht->entries[index]; */
+	/* if ( itr == NULL ) { */
+	/* 	sht->entries[index] = she; */
+	/* 	return true; */
+	/* } */
+	/* while (itr->next != NULL) { */
+	/* 	itr = itr->next; */
+	/* } */
+	/* itr->next = she; */
+	/* she->next = NULL; */
+
 
 	return true;
 }

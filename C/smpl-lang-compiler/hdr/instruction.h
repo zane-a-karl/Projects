@@ -23,6 +23,9 @@ struct InstructionList {
 	struct Instruction *head;
 };
 
+char *
+create_label_from_instr (struct Instruction *i);
+
 struct Instruction *
 new_instruction (char   *name,
 								 bool    produces_output,
@@ -35,6 +38,13 @@ new_instruction_list ();
 void
 push_instruction (struct InstructionList *il,
 									struct Instruction     *new_i);
+
+/* struct Instruction * */
+/* deep_copy_instruction (struct Instruction * src); */
+
+void
+delete_instruction_from_sht (struct StrHashEntry *ent,
+														 struct Instruction *to_delete);
 
 void
 delete_instruction (struct InstructionList *il,

@@ -1,5 +1,15 @@
 #include "../hdr/basic_block.h"
 
+struct GraphNode *
+new_graph_node ()
+{
+	struct GraphNode *gn = calloc(1, sizeof(*gn));
+	gn->agn = NULL;
+	gn->label = calloc(4096, sizeof(char));
+
+	return gn;
+}
+
 
 struct BasicBlock *
 new_basic_block (struct CompilerCtx *cctx)
@@ -22,6 +32,7 @@ new_basic_block (struct CompilerCtx *cctx)
 	bb->dom_instr_tree    = new_str_hash_table();
 	bb->next_r            = NULL;
 	bb->shallow_copy      = false;
+	bb->node              = new_graph_node();
 
 	return bb;
 }
@@ -211,20 +222,28 @@ vbasic_block_emit (struct BasicBlock *bb,
 			identical_adda = find_dominating_identical(latest_i);
 			if ( identical_adda != NULL ) {
 
-				struct OperandList *orig_ops = instr->ops;
-				instr->ops = new_operand_list();
-				push_operand(instr->ops,
-										 new_operand(INSTRUCTION,
-																 identical_adda->number));
+				/* struct OperandList *orig_ops = instr->ops; */
+				/* instr->ops = new_operand_list(); */
+				/* push_operand(instr->ops, */
+				/* 						 new_operand(INSTRUCTION, */
+				/* 												 identical_adda->number)); */
+				int orig_op_num = instr->ops->head->number;
+				instr->ops->head->number = identical_adda->number;
 				identical = find_dominating_identical(instr);
 				if ( identical != NULL ) {
-
+					//					sht_delete(bb->dom_instr_tree, identical->name);
 					delete_instruction(bb->instrs, latest_i);
+					
+					struct StrHashEntry *ent = sht_lookup(bb->dom_instr_tree, dominance_class(latest_i));
+					//					delete_instruction_from_sht(&ent, latest_i);
+					delete_instruction_from_sht(ent, latest_i);
+					//					latest_i->dominator = identical_adda
 					return new_operand(INSTRUCTION, identical->number);
 				} else {
 
-					free_operand_list(&(instr->ops));
-					instr->ops = orig_ops;
+					//					free_operand_list(&(instr->ops));
+					//					instr->ops = orig_ops;
+				instr->ops->head->number = orig_op_num;
 				}//identical!=NULL
 			}//identical_adda!=NULL
 		}//long else if
@@ -378,8 +397,65 @@ copy_block_ctx_params (struct BasicBlock *dst,
 	// will be the same pointers as src's.
 	dst->locals_op      = deep_copy_sht(src->locals_op);
 	dst->locals_dim     = deep_copy_sht(src->locals_dim);
-	dst->dom_instr_tree = deep_copy_sht(src->dom_instr_tree);
 	dst->function       = deep_copy_block_group(src->function);
+	//	dst->dom_instr_tree = deep_copy_sht(src->dom_instr_tree);
+	// I think the dom_instr_tree should be shared not deep copied!
+	dst->dom_instr_tree = src->dom_instr_tree;
+	dst->shallow_copy = true;
+	
+}
+
+void
+add_instrs_to_label (struct BasicBlock *bb)
+{
+	char *label = bb->node->label;
+	if ( bb->instrs != NULL ) {
+		struct Instruction *i = bb->instrs->head;
+		for (; i != NULL; i = i->next) {
+			char *instr = create_label_from_instr(i);
+			strlcat(label, instr,
+							strlen(label) +
+							strlen(instr) + 1);
+			if ( i->next != NULL ) {
+				strlcat(label, " |", strlen(label) + 2 + 1);
+			}
+		}
+		strlcat(label, " }", strlen(label) + 2 + 1);
+	} 
+	agset(bb->node->agn, "label", bb->node->label);
+}
+
+void
+add_dominatee_nodes (struct BasicBlock *bb,
+										 struct CompilerCtx *ir)
+{
+	if ( bb->dominatees != NULL ) {
+		struct BasicBlock *d = bb->dominatees->head;
+		Agedge_t *edge;
+		Agraph_t *graph = ir->graph;
+		Agnode_t *self = bb->node->agn;
+		Agnode_t *d_self;
+		for (; d != NULL; d = d->next_d) {
+			d->node->agn = agnode(graph, d->label, TRUE);
+			d_self = d->node->agn;
+			edge = agedge(graph, self, d_self, NULL, TRUE);
+			agset(edge, "label", "dom");
+			agset(edge, "color", "blue");
+			agset(edge, "style", "dotted");
+			//			create_dominatee_nodes(d);
+			strlcpy(d->node->label, d->label,
+							strnlen(d->node->label, 4096) +
+							strnlen(d->label, MAX_VAR_NAME_LEN) + 1);
+			strlcat(d->node->label, " | { ",
+							strnlen(d->node->label, 4096) +
+							6 + 1);
+			agset(d->node->agn, "label", d->node->label);
+
+			add_instrs_to_label(d);
+
+		}
+		//		agset(bb->node->agn, "label", bb->node->label);
+	}
 }
 
 void
@@ -387,11 +463,18 @@ draw_root_graph (struct BasicBlock *root,
 								 struct CompilerCtx *ir)
 {
 	Agraph_t *graph = ir->graph;
-	Agnode_t *node = agnode(graph, root->label, TRUE);
-	agset(node, "label", root->label);
-	root->node = node;
+	root->node->agn = agnode(graph, root->label, TRUE);
+	strlcpy(root->node->label, root->label,
+					strnlen(root->node->label, 4096) +
+					strnlen(root->label, MAX_VAR_NAME_LEN) + 1);
+	strlcat(root->node->label, " | { ",
+					strnlen(root->node->label, 4096) +
+					6 + 1);
+	agset(root->node->agn, "label", root->node->label);
 
-	
+	add_instrs_to_label(root);
+
+	add_dominatee_nodes(root, ir);
 }
 
 void
@@ -421,11 +504,11 @@ free_basic_block (struct BasicBlock **bb)
 	//Don't free `next_p` it was never calloc'd
 
 	// If's and While's will have the same hash tables and bg!
-	if ( !(*bb)->shallow_copy ) {
+	//	if ( !(*bb)->shallow_copy ) {
 		free_sht(&((*bb)->locals_op));
 		free_sht(&((*bb)->locals_dim));
 		free_block_group(&((*bb)->function));
-	}
+		//	}
 
 	//Don't free `dominatees` it was freed elsewhere
 	/* free((*bb)->dominatees);//Just the pointer not the whole list */
@@ -435,6 +518,7 @@ free_basic_block (struct BasicBlock **bb)
 	if ( !(*bb)->shallow_copy ) {
 		free_sht(&((*bb)->dom_instr_tree));
 	}
+	free((*bb)->node->label);
 	//Don't free `next_r` it was never calloc'd
 	free(*bb);
 	*bb = NULL;

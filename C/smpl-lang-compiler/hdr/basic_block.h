@@ -24,6 +24,11 @@ enum BasicBlockListType {
 	DOMEES
 };
 
+struct GraphNode {
+	Agnode_t *agn;
+	char *label;
+};
+
 struct BasicBlock {
 	struct InstructionList *instrs;
 	char                   *label;
@@ -39,7 +44,7 @@ struct BasicBlock {
 	struct StrHashTable    *dom_instr_tree;
 	struct BasicBlock      *next_r;//Points to next root BB
 	bool                    shallow_copy;
-	Agnode_t               *node;
+	struct GraphNode       *node;
 };
 
 struct BasicBlockList {
@@ -54,6 +59,9 @@ struct BlockGroup {
 	char              *name;
 	bool               is_main;
 };
+
+struct GraphNode *
+new_graph_node ();
 
 struct BasicBlock *
 new_basic_block (struct CompilerCtx *cctx);
@@ -126,6 +134,13 @@ rename_op (struct BasicBlock   *bb,
 void
 copy_block_ctx_params (struct BasicBlock *dst,
 											 struct BasicBlock *src);
+
+void
+add_instrs_to_label (struct BasicBlock *bb);
+
+void
+add_dominatee_nodes (struct BasicBlock *bb,
+										 struct CompilerCtx *ir);
 
 void
 draw_root_graph (struct BasicBlock *root,

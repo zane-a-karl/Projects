@@ -125,15 +125,16 @@ compile_if_stmt (struct AstNode *n,
 		for (; j != NULL; j = j->next) {
 			a = get_local(then_block, j->name);
 			b = get_local(else_block, j->name);
-			if ( a.op == b.op) {
+			//			if ( a.op == b.op) {
+			if ( eq_operands(a.op, b.op) ) {			
 				continue;
 			}
 			then_op = new_operand(LABEL, then_block->label);
 			else_op = new_operand(LABEL, else_block->label);
 			phi_op = compiler_ctx_emit(cctx, true, false, 5,
 																 "phi",
-																 then_op, a.op,
-																 else_op, b.op);
+																 then_op, deep_copy_operand(a.op),
+																 else_op, deep_copy_operand(b.op));
 			set_local_op(cctx->cur_block, j->name, phi_op);
 		}
 	}

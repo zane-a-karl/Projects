@@ -28,25 +28,25 @@ function draw_grid {
     local j=0
     # horizontal lines
     while [[ $i -lt $((1 + (5 * step_y))) ]]; do
-	while [[ $j -lt $((1 + (5 * step_x))) ]]; do
-	    tput cup $i $j
-	    echo "#"
-	    ((j += 2))
-	done
-	j=0
-	((i += step_y))
+				while [[ $j -lt $((1 + (5 * step_x))) ]]; do
+						tput cup $i $j
+						echo "#"
+						((j += 2))
+				done
+				j=0
+				((i += step_y))
     done
     i=0
     j=0
     # vertical lines
     while [[ $j -lt $((1 + (5 * step_x))) ]]; do
-	while [[ $i -lt $((1 + (5 * step_y))) ]]; do
-	    tput cup $i $j
-	    echo "#"
-	    ((i += 1))
-	done
-	i=0
-	((j += step_x))
+				while [[ $i -lt $((1 + (5 * step_y))) ]]; do
+						tput cup $i $j
+						echo "#"
+						((i += 1))
+				done
+				i=0
+				((j += step_x))
     done
 }
 
